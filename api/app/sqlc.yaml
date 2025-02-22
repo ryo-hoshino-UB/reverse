@@ -1,0 +1,9 @@
+version: "2"
+sql:
+  - engine: "mysql"
+    queries: "../db/docker/data/query.sql"
+    schema: "../db/docker/data/002_ddl.sql"
+    gen:
+      go:
+        package: "othello"
+        out: "./generated"
