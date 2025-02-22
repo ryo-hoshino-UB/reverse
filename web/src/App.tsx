@@ -7,6 +7,7 @@ function App() {
   useEffect(() => {
     fetchApi("/api/games", { method: "POST" });
   }, []);
+
   return (
     <div className="text-gray-800 flex flex-col gap-10 items-center justify-start w-dvw h-screen">
       <header className="flex flex-row justify-items-center">

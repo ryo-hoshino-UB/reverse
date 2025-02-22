@@ -7,55 +7,86 @@ package othello
 
 import (
 	"context"
+	"database/sql"
 )
 
-const createGame = `-- name: CreateGame :exec
+const createGame = `-- name: CreateGame :execresult
 INSERT INTO games (started_at) VALUES (NOW())
 `
 
-func (q *Queries) CreateGame(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createGame)
-	return err
+func (q *Queries) CreateGame(ctx context.Context) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createGame)
 }
 
-const createGameResult = `-- name: CreateGameResult :exec
+const createGameResult = `-- name: CreateGameResult :execresult
 INSERT INTO game_results (game_id, winner_disc, end_at) 
-VALUES ($1, $2, NOW())
+VALUES (?, ?, NOW())
 `
 
-func (q *Queries) CreateGameResult(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createGameResult)
-	return err
+type CreateGameResultParams struct {
+	GameID     int32
+	WinnerDisc int32
 }
 
-const createMove = `-- name: CreateMove :exec
+func (q *Queries) CreateGameResult(ctx context.Context, arg CreateGameResultParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createGameResult, arg.GameID, arg.WinnerDisc)
+}
+
+const createMove = `-- name: CreateMove :execresult
 INSERT INTO moves (turn_id, disc, x, y) 
-VALUES ($1, $2, $3, $4)
+VALUES (?, ?, ?, ?)
 `
 
-func (q *Queries) CreateMove(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createMove)
-	return err
+type CreateMoveParams struct {
+	TurnID int32
+	Disc   int32
+	X      int32
+	Y      int32
 }
 
-const createSquare = `-- name: CreateSquare :exec
+func (q *Queries) CreateMove(ctx context.Context, arg CreateMoveParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createMove,
+		arg.TurnID,
+		arg.Disc,
+		arg.X,
+		arg.Y,
+	)
+}
+
+const createSquare = `-- name: CreateSquare :execresult
 INSERT INTO squares (turn_id, x, y, disc) 
-VALUES ($1, $2, $3, $4)
+VALUES (?, ?, ?, ?)
 `
 
-func (q *Queries) CreateSquare(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createSquare)
-	return err
+type CreateSquareParams struct {
+	TurnID int32
+	X      int32
+	Y      int32
+	Disc   int32
 }
 
-const createTurn = `-- name: CreateTurn :exec
+func (q *Queries) CreateSquare(ctx context.Context, arg CreateSquareParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createSquare,
+		arg.TurnID,
+		arg.X,
+		arg.Y,
+		arg.Disc,
+	)
+}
+
+const createTurn = `-- name: CreateTurn :execresult
 INSERT INTO turns (game_id, turn_count, next_disc, end_at) 
-VALUES ($1, $2, $3, NOW())
+VALUES (?, ?, ?, NOW())
 `
 
-func (q *Queries) CreateTurn(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, createTurn)
-	return err
+type CreateTurnParams struct {
+	GameID    int32
+	TurnCount int32
+	NextDisc  sql.NullInt32
+}
+
+func (q *Queries) CreateTurn(ctx context.Context, arg CreateTurnParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createTurn, arg.GameID, arg.TurnCount, arg.NextDisc)
 }
 
 const listGameResults = `-- name: ListGameResults :many
