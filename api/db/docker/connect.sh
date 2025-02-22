@@ -1,0 +1,1 @@
+docker-compose exec mysql mysql --user othello_user --password=pass othello

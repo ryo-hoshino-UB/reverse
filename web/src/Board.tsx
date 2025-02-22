@@ -1,11 +1,18 @@
+import { Stone } from "./Stone";
+
 export const Board: React.FC = () => {
+  const handleClick = () => {
+    console.log("クリックされました");
+  };
+
   const renderSquare = (row: number, col: number) => {
     return (
       <div
+        onClick={handleClick}
         key={`${row}-${col}`}
         className="w-12 h-12 bg-green-600 border border-black flex items-center justify-center"
       >
-        {/* ここに石を配置するロジックを追加 */}
+        <Stone disc={1} />
       </div>
     );
   };

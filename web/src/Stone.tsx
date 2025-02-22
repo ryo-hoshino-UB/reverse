@@ -1,15 +1,17 @@
+import { Disc } from "./disc";
+
 type Props = {
-  color: "black" | "white" | "empty";
+  disc: Disc;
 };
 
-export const Stone: React.FC<Props> = ({ color }) => {
+export const Stone: React.FC<Props> = ({ disc }) => {
   let stoneClass = "w-10 h-10 rounded-full ";
 
-  switch (color) {
-    case "black":
+  switch (disc) {
+    case 1:
       stoneClass += "bg-black";
       break;
-    case "white":
+    case 2:
       stoneClass += "bg-white";
       break;
     default:

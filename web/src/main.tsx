@@ -5,6 +5,10 @@ import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
+    <head>
+      <meta charSet="utf-8" />
+      <title>Othello App</title>
+    </head>
     <App />
   </StrictMode>
 );
