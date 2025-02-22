@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -118,6 +119,52 @@ func main() {
 		}
 
 		return c.JSON(http.StatusOK, startedAt)
+	})
+
+	e.GET("/api/games/latest/turns/:turnCount", func(c echo.Context) error {
+		turnCountStr := c.Param("turnCount")
+		turnCount, err := strconv.Atoi(turnCountStr)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid turn count"})
+		}
+
+		latestGame, err := queries.GetLatestGame(ctx)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		turn, err := queries.GetTurnByGameIDAndTurnCount(ctx, othello.GetTurnByGameIDAndTurnCountParams{
+			GameID:    latestGame.ID,
+			TurnCount: int32(turnCount),
+		})
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		squares, err := queries.GetSquaresByTurnID(ctx, turn.ID)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		board := [8][8]int{}
+		for _, square := range squares {
+			board[square.Y][square.X] = int(square.Disc)
+		}
+
+		res := struct {
+			TurnCount int `json:"turn_count"`
+			Board [8][8]int `json:"board"`
+			NextDisc int `json:"next_disc"`
+			WinnerDisc int `json:"winner_disc"`
+		}{
+			Board: board,
+			NextDisc: int(turn.NextDisc.Int32),
+			TurnCount: int(turn.TurnCount),
+			WinnerDisc: 0,
+		}
+
+		return c.JSON(http.StatusOK, res)
 	})
 
 	e.Logger.Fatal(e.Start(":5002"))

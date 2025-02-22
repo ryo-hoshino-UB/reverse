@@ -89,6 +89,183 @@ func (q *Queries) CreateTurn(ctx context.Context, arg CreateTurnParams) (sql.Res
 	return q.db.ExecContext(ctx, createTurn, arg.GameID, arg.TurnCount, arg.NextDisc)
 }
 
+const getGameByID = `-- name: GetGameByID :one
+SELECT id, started_at FROM games WHERE id = ?
+`
+
+func (q *Queries) GetGameByID(ctx context.Context, id int32) (Game, error) {
+	row := q.db.QueryRowContext(ctx, getGameByID, id)
+	var i Game
+	err := row.Scan(&i.ID, &i.StartedAt)
+	return i, err
+}
+
+const getGameResultByGameID = `-- name: GetGameResultByGameID :one
+SELECT id, game_id, winner_disc, end_at FROM game_results WHERE game_id = ?
+`
+
+func (q *Queries) GetGameResultByGameID(ctx context.Context, gameID int32) (GameResult, error) {
+	row := q.db.QueryRowContext(ctx, getGameResultByGameID, gameID)
+	var i GameResult
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.WinnerDisc,
+		&i.EndAt,
+	)
+	return i, err
+}
+
+const getGameResultByID = `-- name: GetGameResultByID :one
+SELECT id, game_id, winner_disc, end_at FROM game_results WHERE id = ?
+`
+
+func (q *Queries) GetGameResultByID(ctx context.Context, id int32) (GameResult, error) {
+	row := q.db.QueryRowContext(ctx, getGameResultByID, id)
+	var i GameResult
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.WinnerDisc,
+		&i.EndAt,
+	)
+	return i, err
+}
+
+const getLatestGame = `-- name: GetLatestGame :one
+SELECT id, started_at FROM games order by id desc limit 1
+`
+
+func (q *Queries) GetLatestGame(ctx context.Context) (Game, error) {
+	row := q.db.QueryRowContext(ctx, getLatestGame)
+	var i Game
+	err := row.Scan(&i.ID, &i.StartedAt)
+	return i, err
+}
+
+const getMoveByID = `-- name: GetMoveByID :one
+SELECT id, turn_id, disc, x, y FROM moves WHERE id = ?
+`
+
+func (q *Queries) GetMoveByID(ctx context.Context, id int32) (Move, error) {
+	row := q.db.QueryRowContext(ctx, getMoveByID, id)
+	var i Move
+	err := row.Scan(
+		&i.ID,
+		&i.TurnID,
+		&i.Disc,
+		&i.X,
+		&i.Y,
+	)
+	return i, err
+}
+
+const getMoveByTurnID = `-- name: GetMoveByTurnID :one
+SELECT id, turn_id, disc, x, y FROM moves WHERE turn_id = ?
+`
+
+func (q *Queries) GetMoveByTurnID(ctx context.Context, turnID int32) (Move, error) {
+	row := q.db.QueryRowContext(ctx, getMoveByTurnID, turnID)
+	var i Move
+	err := row.Scan(
+		&i.ID,
+		&i.TurnID,
+		&i.Disc,
+		&i.X,
+		&i.Y,
+	)
+	return i, err
+}
+
+const getSquareByID = `-- name: GetSquareByID :one
+SELECT id, turn_id, x, y, disc FROM squares WHERE id = ?
+`
+
+func (q *Queries) GetSquareByID(ctx context.Context, id int32) (Square, error) {
+	row := q.db.QueryRowContext(ctx, getSquareByID, id)
+	var i Square
+	err := row.Scan(
+		&i.ID,
+		&i.TurnID,
+		&i.X,
+		&i.Y,
+		&i.Disc,
+	)
+	return i, err
+}
+
+const getSquaresByTurnID = `-- name: GetSquaresByTurnID :many
+SELECT id, turn_id, x, y, disc FROM squares WHERE turn_id = ?
+`
+
+func (q *Queries) GetSquaresByTurnID(ctx context.Context, turnID int32) ([]Square, error) {
+	rows, err := q.db.QueryContext(ctx, getSquaresByTurnID, turnID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Square
+	for rows.Next() {
+		var i Square
+		if err := rows.Scan(
+			&i.ID,
+			&i.TurnID,
+			&i.X,
+			&i.Y,
+			&i.Disc,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTurnByGameIDAndTurnCount = `-- name: GetTurnByGameIDAndTurnCount :one
+SELECT id, game_id, turn_count, next_disc, end_at FROM turns WHERE game_id = ? and turn_count = ?
+`
+
+type GetTurnByGameIDAndTurnCountParams struct {
+	GameID    int32
+	TurnCount int32
+}
+
+func (q *Queries) GetTurnByGameIDAndTurnCount(ctx context.Context, arg GetTurnByGameIDAndTurnCountParams) (Turn, error) {
+	row := q.db.QueryRowContext(ctx, getTurnByGameIDAndTurnCount, arg.GameID, arg.TurnCount)
+	var i Turn
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.TurnCount,
+		&i.NextDisc,
+		&i.EndAt,
+	)
+	return i, err
+}
+
+const getTurnByID = `-- name: GetTurnByID :one
+SELECT id, game_id, turn_count, next_disc, end_at FROM turns WHERE id = ?
+`
+
+func (q *Queries) GetTurnByID(ctx context.Context, id int32) (Turn, error) {
+	row := q.db.QueryRowContext(ctx, getTurnByID, id)
+	var i Turn
+	err := row.Scan(
+		&i.ID,
+		&i.GameID,
+		&i.TurnCount,
+		&i.NextDisc,
+		&i.EndAt,
+	)
+	return i, err
+}
+
 const listGameResults = `-- name: ListGameResults :many
 SELECT id, game_id, winner_disc, end_at FROM game_results
 `
