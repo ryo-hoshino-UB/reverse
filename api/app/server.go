@@ -1,10 +1,10 @@
 package main
 
 import (
+	"api/dataaccess"
 	othello "api/generated"
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -22,7 +22,7 @@ const (
 )
 
 var (
-	INITIAL_BOARD = [8][8]int{
+	INITIAL_BOARD = [][]int{
 		{EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
 		{EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
 		{EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
@@ -57,6 +57,23 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
+	var gameGatewayImpl = dataaccess.GameGatewayImpl{
+		Context: ctx,
+		Queries: queries,
+	}
+	var turnGatewayImpl = dataaccess.TurnGateway{
+		Context: ctx,
+		Queries: queries,
+	}
+	var moveGatewayImpl = dataaccess.MoveGatewayImpl{
+		Context: ctx,
+		Queries: queries,
+	}
+	var squareGatewayImpl = dataaccess.SquareGatewayImpl{
+		Context: ctx,
+		Queries: queries,
+	}
+
 	// game開始時に叩くAPI
 	// games tableに新規レコードを追加する
 	// turns tableに新規レコード(初期盤面)を追加する
@@ -69,44 +86,20 @@ func main() {
 			log.Fatal(err)
 		}
 
-		insertGameRes, err := queries.CreateGame(ctx)
+		gameRecord, err := gameGatewayImpl.Insert()
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
 		}
 
-		insertedGameID, err := insertGameRes.LastInsertId()
+		insertedGameID := gameRecord.GetID()
+
+		turnRecord, err := turnGatewayImpl.Insert(insertedGameID, 0, BLACK)
+
+		err = squareGatewayImpl.InsertAll(int(turnRecord.GetID()), INITIAL_BOARD)
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
-		}
-
-		insertTurnRes, err := queries.CreateTurn(ctx, othello.CreateTurnParams{
-			GameID:    int32(insertedGameID),
-			TurnCount: 0,
-			NextDisc:  sql.NullInt32{Int32: BLACK, Valid: true},
-		})
-
-		turnID, err := insertTurnRes.LastInsertId()
-		if err != nil {
-			log.Fatal(err)
-			tx.Rollback()
-		}
-
-		for y, line := range INITIAL_BOARD {
-			for x, disc := range line {
-				_, err := queries.CreateSquare(ctx, othello.CreateSquareParams{
-					TurnID: int32(turnID),
-					X:      int32(x),
-					Y:      int32(y),
-					Disc:   int32(disc),
-				})
-
-				if err != nil {
-					log.Fatal(err)
-					tx.Rollback()
-				}
-			}
 		}
 
 		if err != nil {
@@ -132,7 +125,6 @@ func main() {
 		if err := c.Bind(&turnReq); err != nil {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 		}
-		log.Printf("turnReq: %+v", turnReq)
 
 		turnCount := turnReq.TurnCount
 		disc := int(turnReq.Move.Disc)
@@ -145,10 +137,9 @@ func main() {
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to start transaction"})
 		}
-		
+
 		// 1つ前のターンを取得
-		fmt.Printf("latestGame: %+v\n", 1)
-		latestGame, err := queries.GetLatestGame(ctx)
+		gameRecord, err := gameGatewayImpl.FindLatest()
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
@@ -156,28 +147,23 @@ func main() {
 		}
 
 		prevTurnCount := turnCount - 1
-		fmt.Printf("get turn: %+v\n", 1)
-		turn, err := queries.GetTurnByGameIDAndTurnCount(ctx, othello.GetTurnByGameIDAndTurnCountParams{
-			GameID:    latestGame.ID,
-			TurnCount: int32(prevTurnCount),
-		})
+		prevTurnRecord, err := turnGatewayImpl.FindForGameIDAndTurnCount(int(gameRecord.GetID()), prevTurnCount)
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get turn"})
 		}
 
-		fmt.Printf("get square: %+v\n", 1)
-		squares, err := queries.GetSquaresByTurnID(ctx, turn.ID)
+		squaresRecord, err := squareGatewayImpl.FindForTurnID(int(prevTurnRecord.GetID()))
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get squares"})
 		}
 
-		board := [8][8]int{}
-		for _, square := range squares {
-			board[square.Y][square.X] = int(square.Disc)
+		board := [][]int{}
+		for _, square := range squaresRecord {
+			board[square.GetY()][square.GetX()] = int(square.GetDisc())
 		}
 
 		// 石を置く
@@ -191,63 +177,27 @@ func main() {
 			nextDisc = BLACK
 		}
 
-		fmt.Printf("insert turn: %+v\n", 1)
-		fmt.Printf("game_id: %+v\n", latestGame.ID)
-		fmt.Printf("turnCount: %+v\n", turnCount)
-		fmt.Printf("nextDisc: %+v\n", nextDisc)
-		insertTurnRes, err := queries.CreateTurn(ctx, othello.CreateTurnParams{
-			GameID:    int32(latestGame.ID),
-			TurnCount: int32(turnCount),
-			NextDisc:  sql.NullInt32{Int32: int32(nextDisc), Valid: true},
-		})
-		// fmt.Println(err)
-		fmt.Printf("insertTurnRes: %+v\n", insertTurnRes)
-		// _, err = tx.Exec("insert into turns (game_id, turn_count, next_disc) values (?, ?, ?)", latestGame.ID, turnCount, nextDisc)
-		// if err != nil {
-		// 	log.Fatal(err)
-		// 	tx.Rollback()
-		// 	return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to insert turn"})
-		// }
-
-
-		turnID, err := insertTurnRes.LastInsertId()
+		turnRecord, err := turnGatewayImpl.Insert(gameRecord.GetID(), turnCount, nextDisc)
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to insert turn"})
 		}
 
-		fmt.Printf("insert square: %+v\n", 1)
-		for y, line := range board {
-			for x, disc := range line {
-				_, err := queries.CreateSquare(ctx, othello.CreateSquareParams{
-					TurnID: int32(turnID),
-					X:      int32(x),
-					Y:      int32(y),
-					Disc:   int32(disc),
-				})
-
-				if err != nil {
-					log.Fatal(err)
-					tx.Rollback()
-					return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to insert square"})
-				}
-			}
+		err = squareGatewayImpl.InsertAll(int(turnRecord.GetID()), board)
+		if err != nil {
+			log.Fatal(err)
+			tx.Rollback()
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to insert squares"})
 		}
 
-		fmt.Printf("insert move: %+v\n", 1)
-		_, err = queries.CreateMove(ctx, othello.CreateMoveParams{
-			TurnID: int32(turnID),
-			X:      int32(x),
-			Y:      int32(y),
-			Disc:   int32(disc),
-		})
+		_, err = moveGatewayImpl.Insert(int(turnRecord.GetID()), x, y, disc)
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to insert move"})
 		}
-		
+
 		tx.Commit()
 		return c.JSON(http.StatusOK, turnReq)
 	})
@@ -259,28 +209,28 @@ func main() {
 			return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid turn count"})
 		}
 
-		latestGame, err := queries.GetLatestGame(ctx)
+		gameRecord, err := gameGatewayImpl.FindLatest()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		turn, err := queries.GetTurnByGameIDAndTurnCount(ctx, othello.GetTurnByGameIDAndTurnCountParams{
-			GameID:    latestGame.ID,
-			TurnCount: int32(turnCount),
-		})
+		turnRecord, err := turnGatewayImpl.FindForGameIDAndTurnCount(int(gameRecord.GetID()), turnCount)
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		squares, err := queries.GetSquaresByTurnID(ctx, turn.ID)
+		squaresRecord, err := squareGatewayImpl.FindForTurnID(int(turnRecord.GetID()))
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		board := [8][8]int{}
-		for _, square := range squares {
-			board[square.Y][square.X] = int(square.Disc)
+		for _, square := range squaresRecord {
+			board[square.GetY()][square.GetX()] = int(square.GetDisc())
 		}
 
 		res := struct {
@@ -289,9 +239,9 @@ func main() {
 			NextDisc   int       `json:"nextDisc"`
 			WinnerDisc int       `json:"winnerDisc"`
 		}{
-			TurnCount:  int(turn.TurnCount),
+			TurnCount:  int(turnRecord.GetTurnCount()),
 			Board:      board,
-			NextDisc:   int(turn.NextDisc.Int32),
+			NextDisc:   int(turnRecord.GetNextDisc()),
 			WinnerDisc: 0,
 		}
 
