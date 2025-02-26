@@ -131,13 +131,14 @@ func main() {
 		x := turnReq.Move.X
 		y := turnReq.Move.Y
 
+		
 		tx, err := db.BeginTx(ctx, nil)
 		if err != nil {
 			log.Fatal(err)
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to start transaction"})
 		}
-
+		
 		// 1つ前のターンを取得
 		gameRecord, err := gameGatewayImpl.FindLatest()
 		if err != nil {
@@ -145,7 +146,7 @@ func main() {
 			tx.Rollback()
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get latest game"})
 		}
-
+			
 		prevTurnCount := turnCount - 1
 		prevTurnRecord, err := turnGatewayImpl.FindForGameIDAndTurnCount(int(gameRecord.GetID()), prevTurnCount)
 		if err != nil {
@@ -161,7 +162,10 @@ func main() {
 			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get squares"})
 		}
 
-		board := [][]int{}
+		board := make([][]int, 8)
+		for i := range board {
+			board[i] = make([]int, 8)
+		}
 		for _, square := range squaresRecord {
 			board[square.GetY()][square.GetX()] = int(square.GetDisc())
 		}

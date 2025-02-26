@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Disc } from "./disc";
-import { fetchApi } from "./fetch";
-import { TurnRequest, TurnResponse } from "./interface";
 import { Stone } from "./Stone";
+import type { Disc } from "./disc";
+import { fetchApi } from "./fetch";
+import type { TurnRequest, TurnResponse } from "./interface";
 
 const getTurn = async (turnCount: number) => {
   const res = await fetchApi(`/api/games/latest/turns/${turnCount}`);
@@ -13,7 +13,6 @@ const getTurn = async (turnCount: number) => {
 };
 
 const registerTurn = async (turnReq: TurnRequest) => {
-  console.log(turnReq);
   const res = await fetchApi("/api/games/latest/turns", {
     method: "POST",
     headers: {
@@ -29,35 +28,45 @@ export const Board: React.FC = () => {
   const [board, setBoard] = useState<Disc[][]>(
     Array(8)
       .fill(null)
-      .map(() => Array(8).fill(null))
+      .map(() => Array(8).fill(null)),
   );
   const [nextDisc, setNextDisc] = useState<Disc>(0);
   const [turnCount, setTurnCount] = useState(0);
 
   useEffect(() => {
     const fetchTurn = async () => {
-      const turn = await getTurn(turnCount);
+      const turn = await getTurn(0);
       setBoard(turn.board);
       setNextDisc(turn.nextDisc);
     };
 
     fetchTurn();
-  }, [turnCount]);
+  }, []);
 
   const renderSquare = (y: number, x: number) => {
     const disc = board[y][x];
 
     const handleSquareClick = async () => {
       const nextTurnCount = turnCount + 1;
-      setTurnCount(nextTurnCount);
-      await registerTurn({
-        turnCount: nextTurnCount,
-        move: {
-          disc: nextDisc,
-          x,
-          y,
-        },
-      });
+
+      try {
+        await registerTurn({
+          turnCount: nextTurnCount,
+          move: {
+            disc: nextDisc,
+            x,
+            y,
+          },
+        });
+
+        // registerTurnの後に直接最新状態を取得
+        const turn = await getTurn(nextTurnCount);
+        setBoard(turn.board);
+        setNextDisc(turn.nextDisc);
+        setTurnCount(nextTurnCount);
+      } catch (error) {
+        console.error("Error registering turn:", error);
+      }
     };
 
     return (
