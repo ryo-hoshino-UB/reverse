@@ -96,14 +96,39 @@ func (t *TurnService) RegisterTurn(ctx context.Context, turnCount int, disc int,
 	return nil
 }
 
-type LatestGameTurnResponse struct {
+type FindLatestGameTurnByTurnCountOutput struct {
 	TurnCount  int       `json:"turnCount"`
 	Board      [8][8]int `json:"board"`
 	NextDisc   int       `json:"nextDisc"`
 	WinnerDisc int       `json:"winnerDisc"`
 }
 
-func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, turnCount int) (res LatestGameTurnResponse, found bool) {
+func (o FindLatestGameTurnByTurnCountOutput) GetTurnCount() int {
+	return o.TurnCount
+}
+
+func (o FindLatestGameTurnByTurnCountOutput) GetBoard() [8][8]int {
+	return o.Board
+}
+
+func (o FindLatestGameTurnByTurnCountOutput) GetNextDisc() int {
+	return o.NextDisc
+}
+
+func (o FindLatestGameTurnByTurnCountOutput) GetWinnerDisc() int {
+	return o.WinnerDisc
+}
+
+func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [8][8]int, nextDisc int, winnerDisc int) FindLatestGameTurnByTurnCountOutput {
+	return FindLatestGameTurnByTurnCountOutput{
+		TurnCount:  turnCount,
+		Board:      board,
+		NextDisc:   nextDisc,
+		WinnerDisc: winnerDisc,
+	}
+}
+
+func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, turnCount int) (res FindLatestGameTurnByTurnCountOutput, found bool) {
 	db := dataaccess.ConnectDB()
 
 	ggw := dataaccess.NewGameGateway(othello.New(db))
@@ -113,19 +138,19 @@ func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, turnCou
 	gameRecord, err := ggw.FindLatest(ctx)
 	if err != nil {
 		log.Fatal(err)
-		return LatestGameTurnResponse{}, false
+		return FindLatestGameTurnByTurnCountOutput{}, false
 	}
 
 	turnRecord, err := tgw.FindForGameIDAndTurnCount(ctx, int(gameRecord.GetID()), turnCount)
 	if err != nil {
 		log.Fatal(err)
-		return LatestGameTurnResponse{}, false
+		return FindLatestGameTurnByTurnCountOutput{}, false
 	}
 
 	squaresRecord, err := sgw.FindForTurnID(ctx, int(turnRecord.GetID()))
 	if err != nil {
 		log.Fatal(err)
-		return LatestGameTurnResponse{}, false
+		return FindLatestGameTurnByTurnCountOutput{}, false
 	}
 
 	board := [8][8]int{}
@@ -133,12 +158,7 @@ func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, turnCou
 		board[square.GetY()][square.GetX()] = int(square.GetDisc())
 	}
 
-	res = LatestGameTurnResponse{
-		TurnCount:  turnRecord.GetTurnCount(),
-		Board:      board,
-		NextDisc:   turnRecord.GetNextDisc(),
-		WinnerDisc: 0,
-	}
-
+	res = NewFindLatestGameTurnByTurnCountOutput(turnRecord.GetTurnCount(), board, turnRecord.GetNextDisc(), 0)
+	
 	return res, true
 }

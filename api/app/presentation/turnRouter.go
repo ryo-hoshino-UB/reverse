@@ -12,9 +12,16 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type RegisterTurnRequest struct {
+type TurnPostRequest struct {
 	TurnCount int                      `json:"turnCount"`
 	Move      othello.CreateMoveParams `json:"move"`
+}
+
+type TurnGetResponse struct {
+	TurnCount  int       `json:"turnCount"`
+	Board      [8][8]int `json:"board"`
+	NextDisc   int       `json:"nextDisc"`
+	WinnerDisc int       `json:"winnerDisc"`
 }
 
 func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
@@ -23,7 +30,7 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 		ts := application.NewTurnService()
 
 		turns.POST("", func(c echo.Context) error {
-			var turnReq RegisterTurnRequest
+			var turnReq TurnPostRequest
 			if err := c.Bind(&turnReq); err != nil {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 			}
@@ -44,9 +51,16 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid turn count"})
 			}
 
-			res, found := ts.FindLatestGameTurnByTurnCount(ctx, turnCount)
+			turnOutput, found := ts.FindLatestGameTurnByTurnCount(ctx, turnCount)
 			if !found {
 				return c.JSON(http.StatusNotFound, map[string]string{"error": "turn not found"})
+			}
+			
+			res := TurnGetResponse{
+				TurnCount:  turnOutput.TurnCount,
+				Board:      turnOutput.Board,
+				NextDisc:   turnOutput.NextDisc,
+				WinnerDisc: turnOutput.WinnerDisc,
 			}
 
 			return c.JSON(http.StatusOK, res)
