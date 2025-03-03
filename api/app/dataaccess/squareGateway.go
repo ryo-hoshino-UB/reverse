@@ -6,13 +6,18 @@ import (
 	"log"
 )
 
-type SquareGatewayImpl struct {
-	Context context.Context
+type SquareGateway struct {
 	Queries *othello.Queries
 }
 
-func (s SquareGatewayImpl) FindForTurnID(turnID int) ([]SquareRecord, error) {
-	squares, err := s.Queries.GetSquaresByTurnID(s.Context, int32(turnID))
+func NewSquareGateway(q *othello.Queries) *SquareGateway {
+	return &SquareGateway{
+		Queries: q,
+	}
+}
+
+func (s *SquareGateway) FindForTurnID(ctx context.Context, turnID int) ([]SquareRecord, error) {
+	squares, err := s.Queries.GetSquaresByTurnID(ctx, int32(turnID))
 	if err != nil {
 		return nil, err
 	}
@@ -25,8 +30,8 @@ func (s SquareGatewayImpl) FindForTurnID(turnID int) ([]SquareRecord, error) {
 	return squareRecords, nil
 }
 
-func (s SquareGatewayImpl) Insert(turnID int, x int32, y int32, disc int) (SquareRecord, error) {
-	insertRes, err := s.Queries.CreateSquare(s.Context, othello.CreateSquareParams{
+func (s *SquareGateway) Insert(ctx context.Context, turnID int, x int32, y int32, disc int) (SquareRecord, error) {
+	insertRes, err := s.Queries.CreateSquare(ctx, othello.CreateSquareParams{
 		TurnID: int32(turnID),
 		X:      x,
 		Y:      y,
@@ -53,10 +58,10 @@ func (s SquareGatewayImpl) Insert(turnID int, x int32, y int32, disc int) (Squar
 
 }
 
-func (s SquareGatewayImpl) InsertAll(turnID int, board [][]int) error {
+func (s *SquareGateway) InsertAll(ctx context.Context, turnID int, board [][]int) error {
 	for y, line := range board {
 		for x, disc := range line {
-			_, err := s.Insert(turnID, int32(x), int32(y), disc)
+			_, err := s.Insert(ctx, turnID, int32(x), int32(y), disc)
 
 			if err != nil {
 				log.Fatal(err)

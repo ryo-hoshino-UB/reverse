@@ -6,18 +6,18 @@ import (
 	"log"
 )
 
-type GameGateway interface {
-	FindLatest()
-	Insert()
-}
-
-type GameGatewayImpl struct {
-	Context context.Context
+type GameGateway struct {
 	Queries *othello.Queries
 }
 
-func (g GameGatewayImpl) FindLatest() (GameRecord, error) {
-	latestGame, err := g.Queries.GetLatestGame(g.Context)
+func NewGameGateway(q *othello.Queries) *GameGateway {
+	return &GameGateway{
+		Queries: q,
+	}
+}
+
+func (g *GameGateway) FindLatest(ctx context.Context) (GameRecord, error) {
+	latestGame, err := g.Queries.GetLatestGame(ctx)
 	if err != nil {
 		log.Println(err)
 		return GameRecord{}, err
@@ -28,8 +28,8 @@ func (g GameGatewayImpl) FindLatest() (GameRecord, error) {
 	}, nil
 }
 
-func (g GameGatewayImpl) Insert() (GameRecord, error) {
-	insertRes, err := g.Queries.CreateGame(g.Context)
+func (g *GameGateway) Insert(ctx context.Context) (GameRecord, error) {
+	insertRes, err := g.Queries.CreateGame(ctx)
 	if err != nil {
 		log.Println(err)
 		return GameRecord{}, err

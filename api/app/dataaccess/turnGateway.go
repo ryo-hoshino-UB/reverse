@@ -7,12 +7,17 @@ import (
 )
 
 type TurnGateway struct {
-	Context context.Context
 	Queries *othello.Queries
 }
 
-func (t TurnGateway) FindForGameIDAndTurnCount(gameID int, turnCount int) (TurnRecord, error) {
-	turnRecord, err := t.Queries.GetTurnByGameIDAndTurnCount(t.Context, othello.GetTurnByGameIDAndTurnCountParams{
+func NewTurnGateway(q *othello.Queries) *TurnGateway {
+	return &TurnGateway{
+		Queries: q,
+	}
+}
+
+func (t *TurnGateway) FindForGameIDAndTurnCount(ctx context.Context, gameID int, turnCount int) (TurnRecord, error) {
+	turnRecord, err := t.Queries.GetTurnByGameIDAndTurnCount(ctx, othello.GetTurnByGameIDAndTurnCountParams{
 		GameID:    int32(gameID),
 		TurnCount: int32(turnCount),
 	})
@@ -24,8 +29,8 @@ func (t TurnGateway) FindForGameIDAndTurnCount(gameID int, turnCount int) (TurnR
 	}, nil
 }
 
-func (t TurnGateway) Insert(gameID int, turnCount int, nextDisc int) (TurnRecord, error) {
-	insertRes, err := t.Queries.CreateTurn(t.Context, othello.CreateTurnParams{
+func (t *TurnGateway) Insert(ctx context.Context, gameID int, turnCount int, nextDisc int) (TurnRecord, error) {
+	insertRes, err := t.Queries.CreateTurn(ctx, othello.CreateTurnParams{
 		GameID:    int32(gameID),
 		TurnCount: int32(turnCount),
 		NextDisc:  sql.NullInt32{Int32: int32(nextDisc), Valid: true},
