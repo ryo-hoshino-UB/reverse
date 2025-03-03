@@ -5,13 +5,18 @@ import (
 	"context"
 )
 
-type MoveGatewayImpl struct {
-	Context context.Context
-	Queries *othello.Queries
+type MoveGateway struct {
+	q *othello.Queries
 }
 
-func (m MoveGatewayImpl) Insert(turnID int, x int32, y int32, disc int) (MoveRecord, error) {
-	insertRes, err := m.Queries.CreateMove(m.Context, othello.CreateMoveParams{
+func NewMoveGateway(q *othello.Queries) *MoveGateway {
+	return &MoveGateway{
+		q: q,
+	}
+}
+
+func (m MoveGateway) Insert(ctx context.Context, turnID int, x int32, y int32, disc int) (MoveRecord, error) {
+	insertRes, err := m.q.CreateMove(ctx, othello.CreateMoveParams{
 		TurnID: int32(turnID),
 		X:      int32(x),
 		Y:      int32(y),
