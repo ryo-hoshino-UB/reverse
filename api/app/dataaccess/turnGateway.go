@@ -1,6 +1,7 @@
 package dataaccess
 
 import (
+	"api/domain"
 	othello "api/generated"
 	"context"
 	"database/sql"
@@ -29,7 +30,7 @@ func (t *TurnGateway) FindForGameIDAndTurnCount(ctx context.Context, gameID int,
 	}, nil
 }
 
-func (t *TurnGateway) Insert(ctx context.Context, gameID int, turnCount int, nextDisc int) (TurnRecord, error) {
+func (t *TurnGateway) Insert(ctx context.Context, gameID int, turnCount int, nextDisc domain.Disc) (TurnRecord, error) {
 	insertRes, err := t.Queries.CreateTurn(ctx, othello.CreateTurnParams{
 		GameID:    int32(gameID),
 		TurnCount: int32(turnCount),

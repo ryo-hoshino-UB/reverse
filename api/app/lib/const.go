@@ -1,5 +1,7 @@
 package lib
 
+import "api/domain"
+
 const (
 	EMPTY = 0
 	BLACK = 1
@@ -7,7 +9,7 @@ const (
 )
 
 var (
-	INITIAL_BOARD = [][]int{
+	INITIAL_BOARD = [][]domain.Disc{
 		{EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
 		{EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},
 		{EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY},

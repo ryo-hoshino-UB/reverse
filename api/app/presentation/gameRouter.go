@@ -17,7 +17,7 @@ func GameRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 
 		// ゲーム作成API
 		games.POST("", func(c echo.Context) error {
-			if err := gs.StartNewGame(ctx); err != nil {
+			if err := gs.StartNewGame(ctx, db); err != nil {
 				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to create game"})
 			}
 			return c.JSON(http.StatusCreated, map[string]string{"message": "game created"})

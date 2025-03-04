@@ -5,6 +5,7 @@ import (
 	othello "api/generated"
 	"api/lib"
 	"context"
+	"database/sql"
 	"log"
 )
 
@@ -14,9 +15,7 @@ func NewGameService() *GameService {
 	return &GameService{}
 }
 
-func (g *GameService) StartNewGame(ctx context.Context) error {
-	db := dataaccess.ConnectDB()
-
+func (g *GameService) StartNewGame(ctx context.Context, db *sql.DB) error {
 	ggw := dataaccess.NewGameGateway(othello.New(db))
 	tgw := dataaccess.NewTurnGateway(othello.New(db))
 	sgw := dataaccess.NewSquareGateway(othello.New(db))

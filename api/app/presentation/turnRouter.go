@@ -2,6 +2,7 @@ package presentation
 
 import (
 	"api/application"
+	"api/domain"
 	othello "api/generated"
 	"context"
 	"database/sql"
@@ -18,10 +19,10 @@ type TurnPostRequest struct {
 }
 
 type TurnGetResponse struct {
-	TurnCount  int       `json:"turnCount"`
-	Board      [8][8]int `json:"board"`
-	NextDisc   int       `json:"nextDisc"`
-	WinnerDisc int       `json:"winnerDisc"`
+	TurnCount  int             `json:"turnCount"`
+	Board      [][]domain.Disc `json:"board"`
+	NextDisc   int             `json:"nextDisc"`
+	WinnerDisc int             `json:"winnerDisc"`
 }
 
 func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
@@ -35,7 +36,7 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 			}
 
-			err := ts.RegisterTurn(ctx, turnReq.TurnCount, int(turnReq.Move.Disc), turnReq.Move.X, turnReq.Move.Y)
+			err := ts.RegisterTurn(ctx, db, turnReq.TurnCount, int(turnReq.Move.Disc), turnReq.Move.X, turnReq.Move.Y)
 			if err != nil {
 				log.Fatal(err)
 				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to register turn"})
@@ -51,11 +52,11 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid turn count"})
 			}
 
-			turnOutput, found := ts.FindLatestGameTurnByTurnCount(ctx, turnCount)
+			turnOutput, found := ts.FindLatestGameTurnByTurnCount(ctx, db, turnCount)
 			if !found {
 				return c.JSON(http.StatusNotFound, map[string]string{"error": "turn not found"})
 			}
-			
+
 			res := TurnGetResponse{
 				TurnCount:  turnOutput.TurnCount,
 				Board:      turnOutput.Board,

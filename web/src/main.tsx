@@ -9,5 +9,5 @@ createRoot(document.getElementById("root")!).render(
       <title>Othello App</title>
     </head>
     <App />
-  </>
+  </>,
 );

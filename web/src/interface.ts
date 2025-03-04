@@ -1,4 +1,4 @@
-import { Disc } from "./disc";
+import type { Disc } from "./disc";
 
 export type TurnResponse = {
   turnCount: number;

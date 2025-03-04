@@ -2,9 +2,10 @@ package application
 
 import (
 	"api/dataaccess"
+	"api/domain"
 	othello "api/generated"
-	"api/lib"
 	"context"
+	"database/sql"
 	"log"
 )
 
@@ -14,9 +15,7 @@ func NewTurnService() *TurnService {
 	return &TurnService{}
 }
 
-func (t *TurnService) RegisterTurn(ctx context.Context, turnCount int, disc int, x int32, y int32) error {
-	db := dataaccess.ConnectDB()
-
+func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount int, disc int, x int32, y int32) error {
 	ggw := dataaccess.NewGameGateway(othello.New(db))
 	tgw := dataaccess.NewTurnGateway(othello.New(db))
 	sgw := dataaccess.NewSquareGateway(othello.New(db))
@@ -52,33 +51,30 @@ func (t *TurnService) RegisterTurn(ctx context.Context, turnCount int, disc int,
 		return err
 	}
 
-	board := make([][]int, 8)
+	board := make([][]domain.Disc, 8)
 	for i := range board {
-		board[i] = make([]int, 8)
+		board[i] = make([]domain.Disc, 8)
 	}
 	for _, square := range squaresRecord {
-		board[square.GetY()][square.GetX()] = int(square.GetDisc())
+		board[square.GetY()][square.GetX()] = domain.ToDisc(square.GetDisc())
 	}
 
 	// 石を置く
-	board[y][x] = disc
+	board[y][x] = domain.ToDisc(disc)
+
+	prevTurn := domain.NewTurn(prevTurnRecord.GetGameID(), prevTurnRecord.GetTurnCount(), domain.ToDisc(prevTurnRecord.GetNextDisc()), domain.Move{}, domain.NewBoard(board), prevTurnRecord.GetEndAt())
+
+	newTurn := prevTurn.PlaceNext(domain.ToDisc(disc), domain.NewPoint(int(x), int(y)))
 
 	// ターンを保存する
-	var nextDisc int
-	if disc == lib.BLACK {
-		nextDisc = lib.WHITE
-	} else {
-		nextDisc = lib.BLACK
-	}
-
-	turnRecord, err := tgw.Insert(ctx, gameRecord.GetID(), turnCount, nextDisc)
+	turnRecord, err := tgw.Insert(ctx, newTurn.GetGameID(), newTurn.GetTurnCount(), newTurn.GetNextDisc())
 	if err != nil {
 		log.Fatal(err)
 		tx.Rollback()
 		return err
 	}
 
-	err = sgw.InsertAll(ctx, int(turnRecord.GetID()), board)
+	err = sgw.InsertAll(ctx, int(turnRecord.GetID()), newTurn.Board.GetDiscs())
 	if err != nil {
 		log.Fatal(err)
 		tx.Rollback()
@@ -97,17 +93,17 @@ func (t *TurnService) RegisterTurn(ctx context.Context, turnCount int, disc int,
 }
 
 type FindLatestGameTurnByTurnCountOutput struct {
-	TurnCount  int       `json:"turnCount"`
-	Board      [8][8]int `json:"board"`
-	NextDisc   int       `json:"nextDisc"`
-	WinnerDisc int       `json:"winnerDisc"`
+	TurnCount  int             `json:"turnCount"`
+	Board      [][]domain.Disc `json:"board"`
+	NextDisc   int             `json:"nextDisc"`
+	WinnerDisc int             `json:"winnerDisc"`
 }
 
 func (o FindLatestGameTurnByTurnCountOutput) GetTurnCount() int {
 	return o.TurnCount
 }
 
-func (o FindLatestGameTurnByTurnCountOutput) GetBoard() [8][8]int {
+func (o FindLatestGameTurnByTurnCountOutput) GetBoard() [][]domain.Disc {
 	return o.Board
 }
 
@@ -119,7 +115,7 @@ func (o FindLatestGameTurnByTurnCountOutput) GetWinnerDisc() int {
 	return o.WinnerDisc
 }
 
-func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [8][8]int, nextDisc int, winnerDisc int) FindLatestGameTurnByTurnCountOutput {
+func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]domain.Disc, nextDisc int, winnerDisc int) FindLatestGameTurnByTurnCountOutput {
 	return FindLatestGameTurnByTurnCountOutput{
 		TurnCount:  turnCount,
 		Board:      board,
@@ -128,9 +124,7 @@ func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [8][8]int, next
 	}
 }
 
-func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, turnCount int) (res FindLatestGameTurnByTurnCountOutput, found bool) {
-	db := dataaccess.ConnectDB()
-
+func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql.DB, turnCount int) (res FindLatestGameTurnByTurnCountOutput, found bool) {
 	ggw := dataaccess.NewGameGateway(othello.New(db))
 	tgw := dataaccess.NewTurnGateway(othello.New(db))
 	sgw := dataaccess.NewSquareGateway(othello.New(db))
@@ -153,12 +147,16 @@ func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, turnCou
 		return FindLatestGameTurnByTurnCountOutput{}, false
 	}
 
-	board := [8][8]int{}
+	board := make([][]domain.Disc, 8)
+	for i := range board {
+		board[i] = make([]domain.Disc, 8)
+	}
+
 	for _, square := range squaresRecord {
-		board[square.GetY()][square.GetX()] = int(square.GetDisc())
+		board[square.GetY()][square.GetX()] = domain.ToDisc(square.GetDisc())
 	}
 
 	res = NewFindLatestGameTurnByTurnCountOutput(turnRecord.GetTurnCount(), board, turnRecord.GetNextDisc(), 0)
-	
+
 	return res, true
 }

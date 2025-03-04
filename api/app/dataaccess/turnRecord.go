@@ -1,6 +1,9 @@
 package dataaccess
 
-import othello "api/generated"
+import (
+	othello "api/generated"
+	"time"
+)
 
 type TurnRecord struct {
 	Turn othello.Turn
@@ -20,4 +23,8 @@ func (t TurnRecord) GetTurnCount() int {
 
 func (t TurnRecord) GetNextDisc() int {
 	return int(t.Turn.NextDisc.Int32)
+}
+
+func (t TurnRecord) GetEndAt() time.Time {
+	return t.Turn.EndAt
 }

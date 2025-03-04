@@ -20,6 +20,9 @@ const registerTurn = async (turnReq: TurnRequest) => {
     },
     body: JSON.stringify(turnReq),
   });
+  if (!res.ok) {
+    throw new Error("Failed to register turn");
+  }
   const newTurn = await res.json();
   return newTurn;
 };
@@ -49,24 +52,19 @@ export const Board: React.FC = () => {
     const handleSquareClick = async () => {
       const nextTurnCount = turnCount + 1;
 
-      try {
-        await registerTurn({
-          turnCount: nextTurnCount,
-          move: {
-            disc: nextDisc,
-            x,
-            y,
-          },
-        });
-
-        // registerTurnの後に直接最新状態を取得
-        const turn = await getTurn(nextTurnCount);
-        setBoard(turn.board);
-        setNextDisc(turn.nextDisc);
-        setTurnCount(nextTurnCount);
-      } catch (error) {
-        console.error("Error registering turn:", error);
-      }
+      await registerTurn({
+        turnCount: nextTurnCount,
+        move: {
+          disc: nextDisc,
+          x,
+          y,
+        },
+      });
+      // registerTurnの後に直接最新状態を取得
+      const turn = await getTurn(nextTurnCount);
+      setBoard(turn.board);
+      setNextDisc(turn.nextDisc);
+      setTurnCount(nextTurnCount);
     };
 
     return (
