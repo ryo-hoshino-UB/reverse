@@ -69,5 +69,5 @@ func (t Turn) GetEndAt() time.Time {
 }
 
 func NewFirstTurn(gameID int, endAt time.Time) Turn {
-	return NewTurn(gameID, 0, domain.Black, domain.Move{}, domain.Board{}.NewInitialBoard(), endAt)
+	return NewTurn(gameID, 0, domain.Black, domain.Move{}, domain.NewInitialBoard(), endAt)
 }
