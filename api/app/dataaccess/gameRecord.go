@@ -1,6 +1,9 @@
 package dataaccess
 
-import othello "api/generated"
+import (
+	othello "api/generated"
+	"time"
+)
 
 type GameRecord struct {
 	Game othello.Game
@@ -8,4 +11,8 @@ type GameRecord struct {
 
 func (g GameRecord) GetID() int {
 	return int(g.Game.ID)
+}
+
+func (g GameRecord) GetStartedAt() time.Time {
+	return g.Game.StartedAt
 }

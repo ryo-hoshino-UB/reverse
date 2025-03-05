@@ -15,6 +15,15 @@ func NewMoveGateway(q *othello.Queries) *MoveGateway {
 	}
 }
 
+func (m MoveGateway) FindForTurnID(ctx context.Context, turnID int) (MoveRecord, error) {
+	moveGetRes, err := m.q.GetMoveByTurnID(ctx, int32(turnID))
+	if err != nil {
+		return MoveRecord{}, err
+	}
+
+	return NewMoveRecord(moveGetRes), nil
+}
+
 func (m MoveGateway) Insert(ctx context.Context, turnID int, x int32, y int32, disc int) (MoveRecord, error) {
 	insertRes, err := m.q.CreateMove(ctx, othello.CreateMoveParams{
 		TurnID: int32(turnID),

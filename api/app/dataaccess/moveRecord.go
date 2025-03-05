@@ -6,6 +6,12 @@ type MoveRecord struct {
 	Move othello.Move
 }
 
+func NewMoveRecord(move othello.Move) MoveRecord {
+	return MoveRecord{
+		Move: move,
+	}
+}
+
 func (m MoveRecord) GetID() int {
 	return int(m.Move.ID)
 }

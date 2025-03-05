@@ -1,9 +1,9 @@
 package application
 
 import (
-	"api/dataaccess"
 	"api/domain"
-	othello "api/generated"
+	"api/domain/game"
+	"api/domain/turn"
 	"context"
 	"database/sql"
 	"log"
@@ -16,10 +16,8 @@ func NewTurnService() *TurnService {
 }
 
 func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount int, disc int, x int32, y int32) error {
-	ggw := dataaccess.NewGameGateway(othello.New(db))
-	tgw := dataaccess.NewTurnGateway(othello.New(db))
-	sgw := dataaccess.NewSquareGateway(othello.New(db))
-	mgw := dataaccess.NewMoveGateway(othello.New(db))
+	tr := turn.NewTurnRepository()
+	gr := game.NewGameRepository()
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -29,7 +27,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 	}
 
 	// 1つ前のターンを取得
-	gameRecord, err := ggw.FindLatest(ctx)
+	game, err := gr.FindLatest(ctx, db)
 	if err != nil {
 		log.Fatal(err)
 		tx.Rollback()
@@ -37,51 +35,18 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 	}
 
 	prevTurnCount := turnCount - 1
-	prevTurnRecord, err := tgw.FindForGameIDAndTurnCount(ctx, int(gameRecord.GetID()), prevTurnCount)
+	prevTurn, err := tr.FindForGameIDAndTurnCount(ctx, db, int(game.GetID()), prevTurnCount)
 	if err != nil {
 		log.Fatal(err)
 		tx.Rollback()
 		return err
-	}
-
-	squaresRecord, err := sgw.FindForTurnID(ctx, int(prevTurnRecord.GetID()))
-	if err != nil {
-		log.Fatal(err)
-		tx.Rollback()
-		return err
-	}
-
-	board := make([][]domain.Disc, 8)
-	for i := range board {
-		board[i] = make([]domain.Disc, 8)
-	}
-	for _, square := range squaresRecord {
-		board[square.GetY()][square.GetX()] = domain.ToDisc(square.GetDisc())
 	}
 
 	// 石を置く
-	board[y][x] = domain.ToDisc(disc)
-
-	prevTurn := domain.NewTurn(prevTurnRecord.GetGameID(), prevTurnRecord.GetTurnCount(), domain.ToDisc(prevTurnRecord.GetNextDisc()), domain.Move{}, domain.NewBoard(board), prevTurnRecord.GetEndAt())
-
 	newTurn := prevTurn.PlaceNext(domain.ToDisc(disc), domain.NewPoint(int(x), int(y)))
 
 	// ターンを保存する
-	turnRecord, err := tgw.Insert(ctx, newTurn.GetGameID(), newTurn.GetTurnCount(), newTurn.GetNextDisc())
-	if err != nil {
-		log.Fatal(err)
-		tx.Rollback()
-		return err
-	}
-
-	err = sgw.InsertAll(ctx, int(turnRecord.GetID()), newTurn.Board.GetDiscs())
-	if err != nil {
-		log.Fatal(err)
-		tx.Rollback()
-		return err
-	}
-
-	_, err = mgw.Insert(ctx, int(turnRecord.GetID()), x, y, disc)
+	err = tr.Save(ctx, db, newTurn)
 	if err != nil {
 		log.Fatal(err)
 		tx.Rollback()
@@ -125,38 +90,18 @@ func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]domain.Disc
 }
 
 func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql.DB, turnCount int) (res FindLatestGameTurnByTurnCountOutput, found bool) {
-	ggw := dataaccess.NewGameGateway(othello.New(db))
-	tgw := dataaccess.NewTurnGateway(othello.New(db))
-	sgw := dataaccess.NewSquareGateway(othello.New(db))
+	tr := turn.NewTurnRepository()
+	gr := game.NewGameRepository()
 
-	gameRecord, err := ggw.FindLatest(ctx)
+	gameRecord, err := gr.FindLatest(ctx, db)
+
+	turnRecord, err := tr.FindForGameIDAndTurnCount(ctx, db, int(gameRecord.GetID()), turnCount)
 	if err != nil {
 		log.Fatal(err)
 		return FindLatestGameTurnByTurnCountOutput{}, false
 	}
 
-	turnRecord, err := tgw.FindForGameIDAndTurnCount(ctx, int(gameRecord.GetID()), turnCount)
-	if err != nil {
-		log.Fatal(err)
-		return FindLatestGameTurnByTurnCountOutput{}, false
-	}
-
-	squaresRecord, err := sgw.FindForTurnID(ctx, int(turnRecord.GetID()))
-	if err != nil {
-		log.Fatal(err)
-		return FindLatestGameTurnByTurnCountOutput{}, false
-	}
-
-	board := make([][]domain.Disc, 8)
-	for i := range board {
-		board[i] = make([]domain.Disc, 8)
-	}
-
-	for _, square := range squaresRecord {
-		board[square.GetY()][square.GetX()] = domain.ToDisc(square.GetDisc())
-	}
-
-	res = NewFindLatestGameTurnByTurnCountOutput(turnRecord.GetTurnCount(), board, turnRecord.GetNextDisc(), 0)
+	res = NewFindLatestGameTurnByTurnCountOutput(turnRecord.GetTurnCount(), turnRecord.Board.Discs, int(turnRecord.GetNextDisc()), 0)
 
 	return res, true
 }

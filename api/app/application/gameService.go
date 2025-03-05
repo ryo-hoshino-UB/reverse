@@ -1,12 +1,12 @@
 package application
 
 import (
-	"api/dataaccess"
-	othello "api/generated"
-	"api/lib"
+	"api/domain/game"
+	"api/domain/turn"
 	"context"
 	"database/sql"
 	"log"
+	"time"
 )
 
 type GameService struct{}
@@ -16,9 +16,8 @@ func NewGameService() *GameService {
 }
 
 func (g *GameService) StartNewGame(ctx context.Context, db *sql.DB) error {
-	ggw := dataaccess.NewGameGateway(othello.New(db))
-	tgw := dataaccess.NewTurnGateway(othello.New(db))
-	sgw := dataaccess.NewSquareGateway(othello.New(db))
+	gr := game.NewGameRepository()
+	tr := turn.NewTurnRepository()
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -26,23 +25,16 @@ func (g *GameService) StartNewGame(ctx context.Context, db *sql.DB) error {
 		return err
 	}
 
-	gameRecord, err := ggw.Insert(ctx)
+	game, err := gr.Save(ctx, db)
 	if err != nil {
 		log.Fatal(err)
 		tx.Rollback()
 		return err
 	}
 
-	insertedGameID := gameRecord.GetID()
+	firstTurn := turn.NewFirstTurn(game.GetID(), time.Now())
 
-	turnRecord, err := tgw.Insert(ctx, insertedGameID, 0, lib.BLACK)
-	if err != nil {
-		log.Fatal(err)
-		tx.Rollback()
-		return err
-	}
-
-	err = sgw.InsertAll(ctx, int(turnRecord.GetID()), lib.INITIAL_BOARD)
+	err = tr.Save(ctx, db, firstTurn)
 	if err != nil {
 		log.Fatal(err)
 		tx.Rollback()

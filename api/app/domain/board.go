@@ -31,3 +31,20 @@ func (b Board) Place(move Move) Board {
 func (b Board) GetDiscs() [][]Disc {
 	return b.Discs
 }
+
+func (b Board) NewInitialBoard() Board {
+	discs := make([][]Disc, 8)
+	for i := range discs {
+		discs[i] = make([]Disc, 8)
+		for j := range discs[i] {
+			discs[i][j] = Empty
+		}
+	}
+
+	discs[3][3] = White
+	discs[4][4] = White
+	discs[3][4] = Black
+	discs[4][3] = Black
+
+	return NewBoard(discs)
+}
