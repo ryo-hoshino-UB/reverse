@@ -1,7 +1,7 @@
 package main
 
 import (
-	"api/dataaccess"
+	infrastructure "api/infrastructure"
 	"api/presentation"
 	"context"
 	"log"
@@ -13,7 +13,7 @@ import (
 func main() {
 	ctx := context.Background()
 
-	db := dataaccess.ConnectDB()
+	db := infrastructure.ConnectDB()
 	defer db.Close()
 
 	e := echo.New()

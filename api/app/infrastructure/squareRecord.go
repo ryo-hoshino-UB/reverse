@@ -1,4 +1,4 @@
-package dataaccess
+package infrastucture
 
 import othello "api/generated"
 

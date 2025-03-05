@@ -1,8 +1,8 @@
 package game
 
 import (
-	"api/dataaccess"
 	othello "api/generated"
+	infrastucture "api/infrastructure"
 	"context"
 	"database/sql"
 	"log"
@@ -15,7 +15,7 @@ func NewGameRepository() *GameRepository {
 }
 
 func (r GameRepository) FindLatest(ctx context.Context, db *sql.DB) (Game, error) {
-	ggw := dataaccess.NewGameGateway(othello.New(db))
+	ggw := infrastucture.NewGameGateway(othello.New(db))
 
 	gameRecord, err := ggw.FindLatest(ctx)
 	if err != nil {
@@ -27,7 +27,7 @@ func (r GameRepository) FindLatest(ctx context.Context, db *sql.DB) (Game, error
 }
 
 func (r GameRepository) Save(ctx context.Context, db *sql.DB) (Game, error) {
-	ggw := dataaccess.NewGameGateway(othello.New(db))
+	ggw := infrastucture.NewGameGateway(othello.New(db))
 
 	gameRecord, err := ggw.Insert(ctx)
 	if err != nil {

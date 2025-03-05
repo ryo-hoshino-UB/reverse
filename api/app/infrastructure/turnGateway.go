@@ -1,4 +1,4 @@
-package dataaccess
+package infrastucture
 
 import (
 	"api/domain"

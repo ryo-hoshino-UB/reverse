@@ -1,9 +1,9 @@
 package turn
 
 import (
-	"api/dataaccess"
 	"api/domain"
 	othello "api/generated"
+	infrastucture "api/infrastructure"
 	"context"
 	"database/sql"
 	"log"
@@ -17,9 +17,9 @@ func NewTurnRepository() *TurnRepository {
 }
 
 func (t *TurnRepository) Save(ctx context.Context, db *sql.DB, turn Turn) error {
-	tgw := dataaccess.NewTurnGateway(othello.New(db))
-	sgw := dataaccess.NewSquareGateway(othello.New(db))
-	mgw := dataaccess.NewMoveGateway(othello.New(db))
+	tgw := infrastucture.NewTurnGateway(othello.New(db))
+	sgw := infrastucture.NewSquareGateway(othello.New(db))
+	mgw := infrastucture.NewMoveGateway(othello.New(db))
 
 	turnRecord, err := tgw.Insert(ctx, turn.GetGameID(), turn.GetTurnCount(), turn.GetNextDisc())
 	if err != nil {
@@ -42,9 +42,9 @@ func (t *TurnRepository) Save(ctx context.Context, db *sql.DB, turn Turn) error 
 }
 
 func (t *TurnRepository) FindForGameIDAndTurnCount(ctx context.Context, db *sql.DB, gameID int, turnCount int) (Turn, error) {
-	tgw := dataaccess.NewTurnGateway(othello.New(db))
-	sgw := dataaccess.NewSquareGateway(othello.New(db))
-	mgw := dataaccess.NewMoveGateway(othello.New(db))
+	tgw := infrastucture.NewTurnGateway(othello.New(db))
+	sgw := infrastucture.NewSquareGateway(othello.New(db))
+	mgw := infrastucture.NewMoveGateway(othello.New(db))
 
 	turnRecord, err := tgw.FindForGameIDAndTurnCount(ctx, int(gameID), turnCount)
 	if err != nil {
