@@ -20,7 +20,7 @@ export const Stone: React.FC<Props> = ({ disc }) => {
 
   return (
     <div className="w-full h-full flex items-center justify-center">
-      <div className={stoneClass}></div>
+      <div className={stoneClass} />
     </div>
   );
 };

@@ -107,6 +107,25 @@ func (b *Board) Place(move Move) (Board, error) {
 	return NewBoard(newDiscs), nil
 }
 
+func (b *Board) ExistValidMove(disc Disc) bool {
+	for y := MIN_POINT; y < MAX_POINT; y++ {
+		line := b.Discs[y]
+		for x := MIN_POINT; x < MAX_POINT; x++ {
+			discOnBoard := line[x]
+			if discOnBoard != Empty {
+				continue
+			}
+			point, _ := NewPoint(x, y)
+			move := NewMove(disc, point)
+			if len(b.ListFlipPoints(move)) > 0 {
+				return true
+			}
+			continue
+		}
+	}
+	return false
+}
+
 func (b *Board) GetDiscs() [][]Disc {
 	return b.Discs
 }
@@ -120,10 +139,10 @@ func NewInitialBoard() Board {
 		}
 	}
 
-	discs[3][3] = White
-	discs[4][4] = White
-	discs[3][4] = Black
-	discs[4][3] = Black
+	discs[3][4] = White
+	discs[3][3] = Black
+	discs[4][4] = Black
+	discs[4][3] = White
 
 	return NewBoard(discs)
 }

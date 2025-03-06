@@ -37,14 +37,36 @@ func (t Turn) PlaceNext(disc domain.Disc, point domain.Point) (Turn, error) {
 		return Turn{}, err
 	}
 
-	var nextDisc domain.Disc
-	if disc == domain.Black {
-		nextDisc = domain.White
-	} else {
-		nextDisc = domain.Black
-	}
+	nextDisc := t.decideNextDisc(nextBoard, disc)
 
 	return NewTurn(t.GameID, t.TurnCount+1, nextDisc, move, nextBoard, time.Now()), nil
+}
+
+func (t Turn) decideNextDisc(board domain.Board, prevDisc domain.Disc) domain.Disc {
+	existBlackValidMove := board.ExistValidMove(domain.Black)
+	existWhiteValidMove := board.ExistValidMove(domain.White)
+
+	if existBlackValidMove && existWhiteValidMove {
+		if prevDisc == domain.Black {
+			return domain.White
+		} else {
+			return domain.Black
+		}
+	}
+
+	if existBlackValidMove && !existWhiteValidMove {
+		return domain.Black
+	}
+
+	if !existBlackValidMove && existWhiteValidMove {
+		return domain.White
+	}
+
+	if !existBlackValidMove && !existWhiteValidMove {
+		return 0
+	}
+
+	panic("unreachable")
 }
 
 func (t Turn) GetGameID() int {
