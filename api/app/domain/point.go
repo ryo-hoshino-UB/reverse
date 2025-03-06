@@ -6,6 +6,7 @@ const (
 	MIN_POINT = 0
 	MAX_POINT = 7
 )
+
 type Point struct {
 	X int
 	Y int

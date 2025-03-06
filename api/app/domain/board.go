@@ -126,6 +126,18 @@ func (b *Board) ExistValidMove(disc Disc) bool {
 	return false
 }
 
+func (b *Board) CountDiscs(disc Disc) int {
+	count := 0
+	for _, line := range b.Discs {
+		for _, d := range line {
+			if d == disc {
+				count++
+			}
+		}
+	}
+	return count
+}
+
 func (b *Board) GetDiscs() [][]Disc {
 	return b.Discs
 }

@@ -3,6 +3,7 @@ package application
 import (
 	"api/domain"
 	"api/domain/model/game"
+	gameresult "api/domain/model/gameResult"
 	"api/domain/model/turn"
 	"context"
 	"database/sql"
@@ -18,6 +19,7 @@ func NewTurnService() *TurnService {
 func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount int, disc domain.Disc, x int32, y int32) error {
 	tr := turn.NewTurnRepository()
 	gr := game.NewGameRepository()
+	grr := gameresult.NewGameResultRepository()
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -66,6 +68,17 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 		return err
 	}
 
+	if newTurn.GameEnded() {
+		winnerDisc := newTurn.WinnerDisc()
+		gameResult := gameresult.NewGameResult(int(game.GetID()), winnerDisc)
+		err = grr.Save(ctx, db, *gameResult)
+		if err != nil {
+			log.Println(err)
+			tx.Rollback()
+			return err
+		}
+	}
+
 	tx.Commit()
 	return nil
 }
@@ -105,16 +118,22 @@ func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]domain.Disc
 func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql.DB, turnCount int) (res FindLatestGameTurnByTurnCountOutput, err error) {
 	tr := turn.NewTurnRepository()
 	gr := game.NewGameRepository()
+	grr := gameresult.NewGameResultRepository()
 
-	gameRecord, err := gr.FindLatest(ctx, db)
+	game, err := gr.FindLatest(ctx, db)
 
-	turnRecord, err := tr.FindForGameIDAndTurnCount(ctx, db, int(gameRecord.GetID()), turnCount)
+	turn, err := tr.FindForGameIDAndTurnCount(ctx, db, int(game.GetID()), turnCount)
 	if err != nil {
 		log.Println(err)
 		return FindLatestGameTurnByTurnCountOutput{}, err
 	}
 
-	res = NewFindLatestGameTurnByTurnCountOutput(turnRecord.GetTurnCount(), turnRecord.Board.Discs, int(turnRecord.GetNextDisc()), 0)
+	var gameResult gameresult.GameResult
+	if turn.GameEnded() {
+		gameResult, err = grr.FindForGameID(ctx, db, int(game.GetID()))
+	}
+
+	res = NewFindLatestGameTurnByTurnCountOutput(turn.GetTurnCount(), turn.Board.Discs, int(turn.GetNextDisc()), int(gameResult.GetWinnerDisc()))
 
 	return res, nil
 }

@@ -2,6 +2,7 @@ package turn
 
 import (
 	"api/domain"
+	gameresult "api/domain/model/gameResult"
 	"time"
 )
 
@@ -67,6 +68,25 @@ func (t Turn) decideNextDisc(board domain.Board, prevDisc domain.Disc) domain.Di
 	}
 
 	panic("unreachable")
+}
+
+func (t Turn) WinnerDisc() gameresult.WinnerDisc {
+	blackDiscCount := t.Board.CountDiscs(domain.Black)
+	whiteDiscCount := t.Board.CountDiscs(domain.White)
+
+	if blackDiscCount > whiteDiscCount {
+		return gameresult.BlackWin
+	}
+
+	if blackDiscCount < whiteDiscCount {
+		return gameresult.WhiteWin
+	}
+
+	return gameresult.Draw
+}
+
+func (t Turn) GameEnded() bool {
+	return t.NextDisc == domain.Empty
 }
 
 func (t Turn) GetGameID() int {

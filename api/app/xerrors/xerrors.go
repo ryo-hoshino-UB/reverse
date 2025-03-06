@@ -14,20 +14,20 @@ func Wrap(errp *error, format string, args ...any) {
 }
 
 var (
-	ErrNotFound = NewStatusCodeError(http.StatusNotFound, "not found")
-	ErrInternal = NewStatusCodeError(http.StatusInternalServerError, "internal server error")
+	ErrNotFound   = NewStatusCodeError(http.StatusNotFound, "not found")
+	ErrInternal   = NewStatusCodeError(http.StatusInternalServerError, "internal server error")
 	ErrBadRequest = NewStatusCodeError(http.StatusBadRequest, "bad request")
 )
 
 type StatusCodeError struct {
-	msg string
-	code int
+	msg   string
+	code  int
 	cause error
 }
 
 func NewStatusCodeError(code int, msg string) *StatusCodeError {
 	return &StatusCodeError{
-		msg: msg,
+		msg:  msg,
 		code: code,
 	}
 }
