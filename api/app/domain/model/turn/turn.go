@@ -25,14 +25,17 @@ func NewTurn(gameID, turnCount int, nextDisc domain.Disc, move domain.Move, boar
 	}
 }
 
-func (t Turn) PlaceNext(disc domain.Disc, point domain.Point) Turn {
+func (t Turn) PlaceNext(disc domain.Disc, point domain.Point) (Turn, error) {
 	if disc != t.NextDisc {
 		panic("invalid disc")
 	}
 
 	move := domain.NewMove(disc, point)
 
-	nextBoard := t.Board.Place(move)
+	nextBoard, err := t.Board.Place(move)
+	if err != nil {
+		return Turn{}, err
+	}
 
 	var nextDisc domain.Disc
 	if disc == domain.Black {
@@ -41,7 +44,7 @@ func (t Turn) PlaceNext(disc domain.Disc, point domain.Point) Turn {
 		nextDisc = domain.Black
 	}
 
-	return NewTurn(t.GameID, t.TurnCount+1, nextDisc, move, nextBoard, time.Now())
+	return NewTurn(t.GameID, t.TurnCount+1, nextDisc, move, nextBoard, time.Now()), nil
 }
 
 func (t Turn) GetGameID() int {

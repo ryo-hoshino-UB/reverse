@@ -1,6 +1,8 @@
 package domain
 
-import "log"
+import (
+	"api/xerrors"
+)
 
 type Board struct {
 	Discs       [][]Disc
@@ -26,9 +28,6 @@ func (b *Board) ListFlipPoints(move Move) []Point {
 
 		cursorX := walledX + xMove
 		cursorY := walledY + yMove
-
-		log.Printf("cursorX: %d, cursorY: %d", cursorX, cursorY)
-		log.Printf("WalledDiscs: %v", b.WalledDiscs[cursorY][cursorX])
 
 		// 打った石と逆の色の石が続く限り走査する
 		for IsOppositeDisc(move.Disc, b.WalledDiscs[cursorY][cursorX]) {
@@ -75,10 +74,10 @@ func (b *Board) WallDiscs() [][]Disc {
 	return walled
 }
 
-func (b *Board) Place(move Move) Board {
+func (b *Board) Place(move Move) (Board, error) {
 	// 空のマス目ではない場合はおけない
 	if b.Discs[move.Point.Y][move.Point.X] != Empty {
-		panic("cannot place a disc on a non-empty cell")
+		return *b, xerrors.ErrBadRequest
 	}
 
 	// ひっくり返せる場所をリストアップ
@@ -86,7 +85,7 @@ func (b *Board) Place(move Move) Board {
 
 	// ひっくり返せる場所がない場合はおけない
 	if len(flipPoints) == 0 {
-		panic("cannot place a disc without flipping any discs")
+		return *b, xerrors.ErrBadRequest
 	}
 
 	// 盤面をコピー
@@ -104,7 +103,7 @@ func (b *Board) Place(move Move) Board {
 		newDiscs[p.Y][p.X] = move.Disc
 	}
 
-	return NewBoard(newDiscs)
+	return NewBoard(newDiscs), nil
 }
 
 func (b *Board) GetDiscs() [][]Disc {

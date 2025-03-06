@@ -3,6 +3,7 @@ package game
 import (
 	othello "api/generated"
 	infrastucture "api/infrastructure"
+	"api/xerrors"
 	"context"
 	"database/sql"
 	"log"
@@ -19,7 +20,10 @@ func (r GameRepository) FindLatest(ctx context.Context, db *sql.DB) (Game, error
 
 	gameRecord, err := ggw.FindLatest(ctx)
 	if err != nil {
-		log.Fatal(err)
+		if err == sql.ErrNoRows {
+			return Game{}, xerrors.ErrNotFound
+		}
+		log.Println(err)
 		return Game{}, err
 	}
 
@@ -31,7 +35,7 @@ func (r GameRepository) Save(ctx context.Context, db *sql.DB) (Game, error) {
 
 	gameRecord, err := ggw.Insert(ctx)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return Game{}, err
 	}
 

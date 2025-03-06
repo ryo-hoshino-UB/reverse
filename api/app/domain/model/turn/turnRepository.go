@@ -4,6 +4,7 @@ import (
 	"api/domain"
 	othello "api/generated"
 	infrastucture "api/infrastructure"
+	"api/xerrors"
 	"context"
 	"database/sql"
 	"log"
@@ -23,39 +24,40 @@ func (t *TurnRepository) Save(ctx context.Context, db *sql.DB, turn Turn) error 
 
 	turnRecord, err := tgw.Insert(ctx, turn.GetGameID(), turn.GetTurnCount(), turn.GetNextDisc())
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return err
 	}
 
-	err = sgw.InsertAll(ctx, int(turnRecord.GetID()), turn.Board.GetDiscs())
+	err = sgw.InsertAll(ctx, int(turnRecord.GetID()), turn.Board.Discs)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return err
 	}
 
 	_, err = mgw.Insert(ctx, int(turnRecord.GetID()), int32(turn.Move.Point.X), int32(turn.Move.Point.Y), int(turn.Move.Disc))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return err
 	}
 	return nil
 }
 
-func (t *TurnRepository) FindForGameIDAndTurnCount(ctx context.Context, db *sql.DB, gameID int, turnCount int) (Turn, error) {
+func (t *TurnRepository) FindForGameIDAndTurnCount(ctx context.Context, db *sql.DB, gameID int, turnCount int) (Turn Turn, err error) {
+	defer xerrors.Wrap(&err, "FindForGameIDAndTurnCount")
 	tgw := infrastucture.NewTurnGateway(othello.New(db))
 	sgw := infrastucture.NewSquareGateway(othello.New(db))
 	mgw := infrastucture.NewMoveGateway(othello.New(db))
 
 	turnRecord, err := tgw.FindForGameIDAndTurnCount(ctx, int(gameID), turnCount)
 	if err != nil {
-		log.Fatal(err)
-		return Turn{}, err
+		log.Println(err)
+		return Turn, err
 	}
 
 	squaresRecord, err := sgw.FindForTurnID(ctx, int(turnRecord.GetID()))
 	if err != nil {
-		log.Fatal(err)
-		return Turn{}, err
+		log.Println(err)
+		return Turn, err
 	}
 
 	board := make([][]domain.Disc, 8)
@@ -69,7 +71,7 @@ func (t *TurnRepository) FindForGameIDAndTurnCount(ctx context.Context, db *sql.
 
 	moveRecord, err := mgw.FindForTurnID(ctx, int(turnRecord.GetID()))
 	if err != nil {
-		return Turn{}, err
+		return Turn, err
 	}
 
 	move := domain.NewMove(domain.Disc(moveRecord.GetDisc()), domain.NewPoint(int(moveRecord.GetX()), int(moveRecord.GetY())))

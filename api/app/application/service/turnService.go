@@ -2,8 +2,8 @@ package application
 
 import (
 	"api/domain"
-	"api/domain/game"
-	"api/domain/turn"
+	"api/domain/model/game"
+	"api/domain/model/turn"
 	"context"
 	"database/sql"
 	"log"
@@ -21,7 +21,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
@@ -29,26 +29,32 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 	// 1つ前のターンを取得
 	game, err := gr.FindLatest(ctx, db)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
 
 	prevTurnCount := turnCount - 1
 	prevTurn, err := tr.FindForGameIDAndTurnCount(ctx, db, int(game.GetID()), prevTurnCount)
+	// gameが取得できているのにturnが取得できない場合はアプリケーションのバグなので500を返す
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
 
 	// 石を置く
-	newTurn := prevTurn.PlaceNext(domain.ToDisc(disc), domain.NewPoint(int(x), int(y)))
+	newTurn, err := prevTurn.PlaceNext(domain.ToDisc(disc), domain.NewPoint(int(x), int(y)))
+	if err != nil {
+		log.Println(err)
+		tx.Rollback()
+		return err
+	}
 
 	// ターンを保存する
 	err = tr.Save(ctx, db, newTurn)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
@@ -89,7 +95,7 @@ func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]domain.Disc
 	}
 }
 
-func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql.DB, turnCount int) (res FindLatestGameTurnByTurnCountOutput, found bool) {
+func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql.DB, turnCount int) (res FindLatestGameTurnByTurnCountOutput, err error) {
 	tr := turn.NewTurnRepository()
 	gr := game.NewGameRepository()
 
@@ -97,11 +103,11 @@ func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql
 
 	turnRecord, err := tr.FindForGameIDAndTurnCount(ctx, db, int(gameRecord.GetID()), turnCount)
 	if err != nil {
-		log.Fatal(err)
-		return FindLatestGameTurnByTurnCountOutput{}, false
+		log.Println(err)
+		return FindLatestGameTurnByTurnCountOutput{}, err
 	}
 
 	res = NewFindLatestGameTurnByTurnCountOutput(turnRecord.GetTurnCount(), turnRecord.Board.Discs, int(turnRecord.GetNextDisc()), 0)
 
-	return res, true
+	return res, nil
 }

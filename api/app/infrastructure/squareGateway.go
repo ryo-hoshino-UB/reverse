@@ -65,7 +65,7 @@ func (s *SquareGateway) InsertAll(ctx context.Context, turnID int, board [][]dom
 			_, err := s.Insert(ctx, turnID, int32(x), int32(y), disc)
 
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
 				return err
 			}
 		}

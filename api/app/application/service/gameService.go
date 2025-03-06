@@ -1,8 +1,8 @@
 package application
 
 import (
-	"api/domain/game"
-	"api/domain/turn"
+	"api/domain/model/game"
+	"api/domain/model/turn"
 	"context"
 	"database/sql"
 	"log"
@@ -21,13 +21,13 @@ func (g *GameService) StartNewGame(ctx context.Context, db *sql.DB) error {
 
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		return err
 	}
 
 	game, err := gr.Save(ctx, db)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
@@ -36,14 +36,14 @@ func (g *GameService) StartNewGame(ctx context.Context, db *sql.DB) error {
 
 	err = tr.Save(ctx, db, firstTurn)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		tx.Rollback()
 		return err
 	}

@@ -1,7 +1,7 @@
 package presentation
 
 import (
-	"api/application"
+	application "api/application/service"
 	"context"
 	"database/sql"
 	"net/http"

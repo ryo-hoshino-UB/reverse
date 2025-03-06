@@ -1,15 +1,17 @@
 package presentation
 
 import (
-	"api/application"
+	application "api/application/service"
 	"api/domain"
 	othello "api/generated"
+	"api/xerrors"
 	"context"
 	"database/sql"
 	"log"
 	"net/http"
 	"strconv"
 
+	"github.com/go-errors/errors"
 	"github.com/labstack/echo/v4"
 )
 
@@ -38,7 +40,10 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 
 			err := ts.RegisterTurn(ctx, db, turnReq.TurnCount, int(turnReq.Move.Disc), turnReq.Move.X, turnReq.Move.Y)
 			if err != nil {
-				log.Fatal(err)
+				log.Println(err)
+				if errors.Is(err, xerrors.ErrBadRequest) {
+					return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid turn"})
+				}
 				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to register turn"})
 			}
 
@@ -52,8 +57,8 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid turn count"})
 			}
 
-			turnOutput, found := ts.FindLatestGameTurnByTurnCount(ctx, db, turnCount)
-			if !found {
+			turnOutput, err := ts.FindLatestGameTurnByTurnCount(ctx, db, turnCount)
+			if errors.Is(err, xerrors.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, map[string]string{"error": "turn not found"})
 			}
 
