@@ -66,7 +66,12 @@ func (t *TurnRepository) FindForGameIDAndTurnCount(ctx context.Context, db *sql.
 	}
 
 	for _, square := range squaresRecord {
-		board[square.GetY()][square.GetX()] = domain.ToDisc(square.GetDisc())
+		disc, err := domain.ToDisc((square.GetDisc()))
+		if err != nil {
+			return Turn, err
+		}
+
+		board[square.GetY()][square.GetX()] = disc
 	}
 
 	moveRecord, err := mgw.FindForTurnID(ctx, int(turnRecord.GetID()))
@@ -74,7 +79,12 @@ func (t *TurnRepository) FindForGameIDAndTurnCount(ctx context.Context, db *sql.
 		return Turn, err
 	}
 
-	move := domain.NewMove(domain.Disc(moveRecord.GetDisc()), domain.NewPoint(int(moveRecord.GetX()), int(moveRecord.GetY())))
+	point, err := domain.NewPoint(int(moveRecord.GetX()), int(moveRecord.GetY()))
+	if err != nil {
+		return Turn, err
+	}
+
+	move := domain.NewMove(domain.Disc(moveRecord.GetDisc()), point)
 
 	return NewTurn(
 		int(turnRecord.GetGameID()),

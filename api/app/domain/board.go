@@ -31,7 +31,8 @@ func (b *Board) ListFlipPoints(move Move) []Point {
 
 		// 打った石と逆の色の石が続く限り走査する
 		for IsOppositeDisc(move.Disc, b.WalledDiscs[cursorY][cursorX]) {
-			flipCandidates = append(flipCandidates, NewPoint(cursorX-1, cursorY-1))
+			point, _ := NewPoint(cursorX-1, cursorY-1)
+			flipCandidates = append(flipCandidates, point)
 			cursorX += xMove
 			cursorY += yMove
 			if move.Disc == b.WalledDiscs[cursorY][cursorX] {

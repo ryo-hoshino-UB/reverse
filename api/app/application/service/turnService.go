@@ -15,7 +15,7 @@ func NewTurnService() *TurnService {
 	return &TurnService{}
 }
 
-func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount int, disc int, x int32, y int32) error {
+func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount int, disc domain.Disc, x int32, y int32) error {
 	tr := turn.NewTurnRepository()
 	gr := game.NewGameRepository()
 
@@ -43,8 +43,15 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 		return err
 	}
 
+	point, err := domain.NewPoint(int(x), int(y))
+	if err != nil {
+		log.Println(err)
+		tx.Rollback()
+		return err
+	}
+
 	// 石を置く
-	newTurn, err := prevTurn.PlaceNext(domain.ToDisc(disc), domain.NewPoint(int(x), int(y)))
+	newTurn, err := prevTurn.PlaceNext(disc, point)
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()

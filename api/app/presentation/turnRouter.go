@@ -38,7 +38,12 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 			}
 
-			err := ts.RegisterTurn(ctx, db, turnReq.TurnCount, int(turnReq.Move.Disc), turnReq.Move.X, turnReq.Move.Y)
+			disc, err := domain.ToDisc(int(turnReq.Move.Disc))
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid disc"})
+			}
+			
+			err = ts.RegisterTurn(ctx, db, turnReq.TurnCount, disc, turnReq.Move.X, turnReq.Move.Y)
 			if err != nil {
 				log.Println(err)
 				if errors.Is(err, xerrors.ErrBadRequest) {

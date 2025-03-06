@@ -1,5 +1,7 @@
 package domain
 
+import "api/xerrors"
+
 type Disc int
 
 const (
@@ -9,18 +11,18 @@ const (
 	Wall
 )
 
-func ToDisc(v int) Disc {
+func ToDisc(v int) (Disc, error) {
 	switch v {
 	case 0:
-		return Empty
+		return Empty, nil
 	case 1:
-		return Black
+		return Black, nil
 	case 2:
-		return White
+		return White, nil
 	case 3:
-		return Wall
+		return Wall, nil
 	default:
-		return Empty
+		return 0, xerrors.ErrBadRequest
 	}
 }
 
