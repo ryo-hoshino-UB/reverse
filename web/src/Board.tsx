@@ -1,10 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { NextDiscBanner } from "./NextDiscBanner";
+import { StartButton } from "./StartButton";
 import { Stone } from "./Stone";
 import type { Disc } from "./disc";
 import { fetchApi } from "./fetch";
 import type { TurnRequest, TurnResponse } from "./interface";
+
+const registerGame = async () => {
+  const res = await fetchApi("/api/games", {
+    method: "POST",
+  });
+  const game = await res.json();
+  return game;
+};
 
 const getTurn = async (turnCount: number) => {
   const res = await fetchApi(`/api/games/latest/turns/${turnCount}`);
@@ -28,13 +38,14 @@ const registerTurn = async (turnReq: TurnRequest) => {
 };
 
 export const Board: React.FC = () => {
+  const [start, setStart] = useState(false);
+  const [nextDisc, setNextDisc] = useState<Disc>(0);
+  const [turnCount, setTurnCount] = useState(0);
   const [board, setBoard] = useState<Disc[][]>(
     Array(8)
       .fill(null)
-      .map(() => Array(8).fill(null)),
+      .map(() => Array(8).fill(null))
   );
-  const [nextDisc, setNextDisc] = useState<Disc>(0);
-  const [turnCount, setTurnCount] = useState(0);
 
   useEffect(() => {
     const fetchTurn = async () => {
@@ -68,6 +79,7 @@ export const Board: React.FC = () => {
     };
 
     return (
+      // biome-ignore lint/a11y/useKeyWithClickEvents:
       <div
         onClick={handleSquareClick}
         key={`${y}-${x}`}
@@ -87,8 +99,20 @@ export const Board: React.FC = () => {
   };
 
   return (
-    <div className="inline-block bg-green-700 p-1">
-      {[...Array(8)].map((_, y) => renderRow(y))}
+    <div className="flex flex-col gap-6 w-[392px]">
+      <div className="inline-block bg-green-700 p-1">
+        {[...Array(8)].map((_, y) => renderRow(y))}
+      </div>
+      {!start ? (
+        <StartButton
+          onClick={async () => {
+            await registerGame();
+            setStart(true);
+          }}
+        />
+      ) : (
+        <NextDiscBanner nextDisc={nextDisc} />
+      )}
     </div>
   );
 };
