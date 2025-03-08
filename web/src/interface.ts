@@ -1,10 +1,11 @@
 import type { Disc } from "./disc";
+import type { WinnerDisc } from "./winnerDisc";
 
 export type TurnResponse = {
   turnCount: number;
   board: Disc[][];
   nextDisc: Disc;
-  winnerDisc: Disc;
+  winnerDisc: WinnerDisc;
 };
 
 export type TurnRequest = {

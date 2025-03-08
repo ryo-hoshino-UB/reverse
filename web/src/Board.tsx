@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { NextDiscBanner } from "./NextDiscBanner";
-import { StartButton } from "./StartButton";
 import { Stone } from "./Stone";
 import type { Disc } from "./disc";
 import { fetchApi } from "./fetch";
 import type { TurnRequest, TurnResponse } from "./interface";
+import { WINNER_DISC } from "./winnerDisc";
 
 const registerGame = async () => {
   const res = await fetchApi("/api/games", {
@@ -38,7 +38,6 @@ const registerTurn = async (turnReq: TurnRequest) => {
 };
 
 export const Board: React.FC = () => {
-  const [start, setStart] = useState(false);
   const [nextDisc, setNextDisc] = useState<Disc>(0);
   const [turnCount, setTurnCount] = useState(0);
   const [board, setBoard] = useState<Disc[][]>(
@@ -46,14 +45,22 @@ export const Board: React.FC = () => {
       .fill(null)
       .map(() => Array(8).fill(null))
   );
+  const [bannerMessage, setBannerMessage] = useState(
+    changeBannerMessage({ nextDisc: 1 })
+  );
 
   useEffect(() => {
+    const startGame = async () => {
+      await registerGame();
+    };
+
     const fetchTurn = async () => {
       const turn = await getTurn(0);
       setBoard(turn.board);
       setNextDisc(turn.nextDisc);
     };
 
+    startGame();
     fetchTurn();
   }, []);
 
@@ -73,6 +80,21 @@ export const Board: React.FC = () => {
       });
       // registerTurnの後に直接最新状態を取得
       const turn = await getTurn(nextTurnCount);
+      console.log(turn);
+      if (turn.nextDisc !== 0) {
+        setBannerMessage(changeBannerMessage({ nextDisc: turn.nextDisc }));
+        if (nextDisc === turn.nextDisc) {
+          setBannerMessage(
+            `もう一度${nextDisc === 1 ? "白" : "黒"}のターンです`
+          );
+        }
+      } else {
+        if (turn.winnerDisc === WINNER_DISC.Draw) {
+          setBannerMessage("引き分けです");
+        } else {
+          setBannerMessage(`${turn.winnerDisc === 1 ? "黒" : "白"}の勝ちです`);
+        }
+      }
       setBoard(turn.board);
       setNextDisc(turn.nextDisc);
       setTurnCount(nextTurnCount);
@@ -103,16 +125,24 @@ export const Board: React.FC = () => {
       <div className="inline-block bg-green-700 p-1">
         {[...Array(8)].map((_, y) => renderRow(y))}
       </div>
-      {!start ? (
-        <StartButton
-          onClick={async () => {
-            await registerGame();
-            setStart(true);
-          }}
-        />
-      ) : (
-        <NextDiscBanner nextDisc={nextDisc} />
-      )}
+      <NextDiscBanner message={bannerMessage} />
     </div>
   );
+};
+
+type Props = {
+  nextDisc: Disc;
+  skip?: boolean;
+};
+
+const changeBannerMessage = ({ nextDisc }: Props): string => {
+  let nextDiscColor = "";
+  if (nextDisc === 1) {
+    nextDiscColor = "黒";
+  }
+  if (nextDisc === 2) {
+    nextDiscColor = "白";
+  }
+
+  return `${nextDiscColor}のターンです`;
 };

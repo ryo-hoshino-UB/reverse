@@ -131,6 +131,10 @@ func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql
 	var gameResult gameresult.GameResult
 	if turn.GameEnded() {
 		gameResult, err = grr.FindForGameID(ctx, db, int(game.GetID()))
+		if err != nil {
+			log.Println(err)
+			return FindLatestGameTurnByTurnCountOutput{}, err
+		}
 	}
 
 	res = NewFindLatestGameTurnByTurnCountOutput(turn.GetTurnCount(), turn.Board.Discs, int(turn.GetNextDisc()), int(gameResult.GetWinnerDisc()))

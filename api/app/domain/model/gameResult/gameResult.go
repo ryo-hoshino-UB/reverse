@@ -12,6 +12,7 @@ func NewGameResult(gameID int, winnerDisc WinnerDisc) *GameResult {
 	return &GameResult{
 		GameID:     gameID,
 		WinnerDisc: winnerDisc,
+		EndAt:      time.Now(),
 	}
 }
 

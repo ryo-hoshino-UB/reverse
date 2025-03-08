@@ -11,12 +11,14 @@ type GameResultGateway struct {
 	q *othello.Queries
 }
 
-func NewGameResultGateway() *GameResultGateway {
-	return &GameResultGateway{}
+func NewGameResultGateway(q *othello.Queries) *GameResultGateway {
+	return &GameResultGateway{
+		q: q,
+	}
 }
 
 func (g *GameResultGateway) SelectGameResult(ctx context.Context, gameID int) (GameResultRecord, error) {
-	gameResult, err := g.q.GetGameResultByID(ctx, int32(gameID))
+	gameResult, err := g.q.GetGameResultByGameID(ctx, int32(gameID))
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			return GameResultRecord{}, xerrors.ErrNotFound
