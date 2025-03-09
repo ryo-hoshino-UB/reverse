@@ -1,14 +1,12 @@
-import type { ComponentProps } from "react";
+import type { ComponentProps, PropsWithChildren } from "react";
 
 type Props = ComponentProps<"button">;
-export const StartButton: React.FC<Props> = ({ ...props }) => {
+export const StartButton: React.FC<PropsWithChildren<Props>> = ({
+  ...props
+}) => {
   return (
-    <button
-      type="button"
-      onClick={props.onClick}
-      className="bg-blue-400 text-white "
-    >
-      Game Start!
+    <button type="button" onClick={props.onClick} className="text-white ">
+      {props.children}
     </button>
   );
 };
