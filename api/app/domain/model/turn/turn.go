@@ -1,21 +1,21 @@
 package turn
 
 import (
-	"api/domain"
-	gameresult "api/domain/model/gameResult"
+	"api/domain/model/gameresult"
 	"time"
 )
 
 type Turn struct {
+	ID 	  int
 	GameID    int
 	TurnCount int
-	NextDisc  domain.Disc
-	Move      domain.Move
-	Board     domain.Board
+	NextDisc  Disc
+	Move      Move
+	Board     Board
 	EndAt     time.Time
 }
 
-func NewTurn(gameID, turnCount int, nextDisc domain.Disc, move domain.Move, board domain.Board, endAt time.Time) Turn {
+func NewTurn(gameID, turnCount int, nextDisc Disc, move Move, board Board, endAt time.Time) Turn {
 	return Turn{
 		GameID:    gameID,
 		TurnCount: turnCount,
@@ -26,12 +26,12 @@ func NewTurn(gameID, turnCount int, nextDisc domain.Disc, move domain.Move, boar
 	}
 }
 
-func (t Turn) PlaceNext(disc domain.Disc, point domain.Point) (Turn, error) {
+func (t Turn) PlaceNext(disc Disc, point Point) (Turn, error) {
 	if disc != t.NextDisc {
 		panic("invalid disc")
 	}
 
-	move := domain.NewMove(disc, point)
+	move := NewMove(disc, point)
 
 	nextBoard, err := t.Board.Place(move)
 	if err != nil {
@@ -43,24 +43,24 @@ func (t Turn) PlaceNext(disc domain.Disc, point domain.Point) (Turn, error) {
 	return NewTurn(t.GameID, t.TurnCount+1, nextDisc, move, nextBoard, time.Now()), nil
 }
 
-func (t Turn) decideNextDisc(board domain.Board, prevDisc domain.Disc) domain.Disc {
-	existBlackValidMove := board.ExistValidMove(domain.Black)
-	existWhiteValidMove := board.ExistValidMove(domain.White)
+func (t Turn) decideNextDisc(board Board, prevDisc Disc) Disc {
+	existBlackValidMove := board.ExistValidMove(Black)
+	existWhiteValidMove := board.ExistValidMove(White)
 
 	if existBlackValidMove && existWhiteValidMove {
-		if prevDisc == domain.Black {
-			return domain.White
+		if prevDisc == Black {
+			return White
 		} else {
-			return domain.Black
+			return Black
 		}
 	}
 
 	if existBlackValidMove && !existWhiteValidMove {
-		return domain.Black
+		return Black
 	}
 
 	if !existBlackValidMove && existWhiteValidMove {
-		return domain.White
+		return White
 	}
 
 	if !existBlackValidMove && !existWhiteValidMove {
@@ -71,8 +71,8 @@ func (t Turn) decideNextDisc(board domain.Board, prevDisc domain.Disc) domain.Di
 }
 
 func (t Turn) WinnerDisc() gameresult.WinnerDisc {
-	blackDiscCount := t.Board.CountDiscs(domain.Black)
-	whiteDiscCount := t.Board.CountDiscs(domain.White)
+	blackDiscCount := t.Board.CountDiscs(Black)
+	whiteDiscCount := t.Board.CountDiscs(White)
 
 	if blackDiscCount > whiteDiscCount {
 		return gameresult.BlackWin
@@ -86,7 +86,11 @@ func (t Turn) WinnerDisc() gameresult.WinnerDisc {
 }
 
 func (t Turn) GameEnded() bool {
-	return t.NextDisc == domain.Empty
+	return t.NextDisc == Empty
+}
+
+func (t Turn) GetID() int {
+	return t.ID
 }
 
 func (t Turn) GetGameID() int {
@@ -97,15 +101,15 @@ func (t Turn) GetTurnCount() int {
 	return t.TurnCount
 }
 
-func (t Turn) GetNextDisc() domain.Disc {
+func (t Turn) GetNextDisc() Disc {
 	return t.NextDisc
 }
 
-func (t Turn) GetMove() domain.Move {
+func (t Turn) GetMove() Move {
 	return t.Move
 }
 
-func (t Turn) GetBoard() domain.Board {
+func (t Turn) GetBoard() Board {
 	return t.Board
 }
 
@@ -114,5 +118,5 @@ func (t Turn) GetEndAt() time.Time {
 }
 
 func NewFirstTurn(gameID int, endAt time.Time) Turn {
-	return NewTurn(gameID, 0, domain.Black, domain.Move{}, domain.NewInitialBoard(), endAt)
+	return NewTurn(gameID, 0, Black, Move{}, NewInitialBoard(), endAt)
 }

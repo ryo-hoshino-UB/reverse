@@ -2,6 +2,8 @@ package presentation
 
 import (
 	application "api/application/service"
+	"api/infrastructure/repository/game"
+	"api/infrastructure/repository/turn"
 	"context"
 	"database/sql"
 	"net/http"
@@ -10,10 +12,13 @@ import (
 )
 
 func GameRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
+	gr := game.NewGameMySQLRepositoryImpl()
+	tr := turn.NewTurnMySQLRepositoryImpl()
+	gs := application.NewGameService(gr, tr)
+	
 	return func(e *echo.Echo) {
 		// ゲームに関連するAPI群
 		games := e.Group("/api/games")
-		gs := application.NewGameService()
 
 		// ゲーム作成API
 		games.POST("", func(c echo.Context) error {

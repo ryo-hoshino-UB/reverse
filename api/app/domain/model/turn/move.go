@@ -1,4 +1,4 @@
-package domain
+package turn
 
 type Move struct {
 	Disc  Disc

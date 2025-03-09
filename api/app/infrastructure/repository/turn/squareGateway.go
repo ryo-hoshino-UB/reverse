@@ -1,7 +1,7 @@
-package infrastructure
+package turn
 
 import (
-	"api/domain"
+	"api/domain/model/turn"
 	othello "api/generated"
 	"context"
 	"log"
@@ -31,7 +31,7 @@ func (s *SquareGateway) FindForTurnID(ctx context.Context, turnID int) ([]Square
 	return squareRecords, nil
 }
 
-func (s *SquareGateway) Insert(ctx context.Context, turnID int, x int32, y int32, disc domain.Disc) (SquareRecord, error) {
+func (s *SquareGateway) Insert(ctx context.Context, turnID int, x int32, y int32, disc turn.Disc) (SquareRecord, error) {
 	insertRes, err := s.Queries.CreateSquare(ctx, othello.CreateSquareParams{
 		TurnID: int32(turnID),
 		X:      x,
@@ -59,7 +59,7 @@ func (s *SquareGateway) Insert(ctx context.Context, turnID int, x int32, y int32
 
 }
 
-func (s *SquareGateway) InsertAll(ctx context.Context, turnID int, board [][]domain.Disc) error {
+func (s *SquareGateway) InsertAll(ctx context.Context, turnID int, board [][]turn.Disc) error {
 	for y, line := range board {
 		for x, disc := range line {
 			_, err := s.Insert(ctx, turnID, int32(x), int32(y), disc)

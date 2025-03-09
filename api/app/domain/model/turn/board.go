@@ -1,4 +1,4 @@
-package domain
+package turn
 
 import (
 	"api/xerrors"

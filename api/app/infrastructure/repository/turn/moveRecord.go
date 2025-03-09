@@ -1,4 +1,4 @@
-package infrastructure
+package turn
 
 import othello "api/generated"
 

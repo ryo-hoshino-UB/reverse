@@ -1,6 +1,7 @@
-package infrastructure
+package game
 
 import (
+	"api/domain/model/game"
 	othello "api/generated"
 	"context"
 	"log"
@@ -16,34 +17,33 @@ func NewGameGateway(q *othello.Queries) *GameGateway {
 	}
 }
 
-func (g *GameGateway) FindLatest(ctx context.Context) (GameRecord, error) {
+func (g *GameGateway) FindLatest(ctx context.Context) (game.Game, error) {
 	latestGame, err := g.Queries.GetLatestGame(ctx)
 	if err != nil {
 		log.Println(err)
-		return GameRecord{}, err
+		return game.Game{}, err
 	}
 
-	return GameRecord{
-		Game: latestGame,
+	return game.Game{
+		ID: int(latestGame.ID),
+		StartedAt: latestGame.StartedAt,
 	}, nil
 }
 
-func (g *GameGateway) Insert(ctx context.Context) (GameRecord, error) {
+func (g *GameGateway) Save(ctx context.Context) (game.Game, error) {
 	insertRes, err := g.Queries.CreateGame(ctx)
 	if err != nil {
 		log.Println(err)
-		return GameRecord{}, err
+		return game.Game{}, err
 	}
 
 	gameID, err := insertRes.LastInsertId()
 	if err != nil {
 		log.Println(err)
-		return GameRecord{}, err
+		return game.Game{}, err
 	}
 
-	return GameRecord{
-		Game: othello.Game{
-			ID: int32(gameID),
-		},
+	return game.Game{
+		ID: int(gameID),
 	}, nil
 }

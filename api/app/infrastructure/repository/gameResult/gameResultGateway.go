@@ -1,4 +1,4 @@
-package infrastructure
+package gameresult
 
 import (
 	othello "api/generated"

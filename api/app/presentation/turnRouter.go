@@ -2,8 +2,11 @@ package presentation
 
 import (
 	application "api/application/service"
-	"api/domain"
+	"api/domain/model/turn"
 	othello "api/generated"
+	"api/infrastructure/repository/game"
+	"api/infrastructure/repository/gameresult"
+	turnRepo "api/infrastructure/repository/turn"
 	"api/xerrors"
 	"context"
 	"database/sql"
@@ -22,15 +25,19 @@ type TurnPostRequest struct {
 
 type TurnGetResponse struct {
 	TurnCount  int             `json:"turnCount"`
-	Board      [][]domain.Disc `json:"board"`
+	Board      [][]turn.Disc `json:"board"`
 	NextDisc   int             `json:"nextDisc"`
 	WinnerDisc int             `json:"winnerDisc"`
 }
 
 func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
+	gr := game.NewGameMySQLRepositoryImpl()
+	tr := turnRepo.NewTurnMySQLRepositoryImpl()
+	grr := gameresult.NewGameResultMySQLRepositoryImpl()
+	ts := application.NewTurnService(tr, gr, grr) 
+
 	return func(e *echo.Echo) {
 		turns := e.Group("/api/games/latest/turns")
-		ts := application.NewTurnService()
 
 		turns.POST("", func(c echo.Context) error {
 			var turnReq TurnPostRequest
@@ -38,7 +45,7 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid request"})
 			}
 
-			disc, err := domain.ToDisc(int(turnReq.Move.Disc))
+			disc, err := turn.ToDisc(int(turnReq.Move.Disc))
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid disc"})
 			}

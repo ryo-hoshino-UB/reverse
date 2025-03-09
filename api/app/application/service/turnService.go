@@ -1,26 +1,33 @@
 package application
 
 import (
-	"api/domain"
 	"api/domain/model/game"
-	gameresult "api/domain/model/gameResult"
+	"api/domain/model/gameresult"
 	"api/domain/model/turn"
 	"context"
 	"database/sql"
 	"log"
 )
 
-type TurnService struct{}
-
-func NewTurnService() *TurnService {
-	return &TurnService{}
+type TurnService struct{
+	turnPort turn.TurnRepository
+	gamePort game.GameRepository
+	gameResPort gameresult.GameResultRepository
 }
 
-func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount int, disc domain.Disc, x int32, y int32) error {
-	tr := turn.NewTurnRepository()
-	gr := game.NewGameRepository()
-	grr := gameresult.NewGameResultRepository()
+func NewTurnService(
+	turnPort turn.TurnRepository,
+	gamePort game.GameRepository,
+	gameResPort gameresult.GameResultRepository,
+) *TurnService {
+	return &TurnService{
+		turnPort: turnPort,
+		gamePort: gamePort,
+		gameResPort: gameResPort,
+	}
+}
 
+func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount int, disc turn.Disc, x int32, y int32) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Println(err)
@@ -29,7 +36,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 	}
 
 	// 1つ前のターンを取得
-	game, err := gr.FindLatest(ctx, db)
+	game, err := t.gamePort.FindLatest(ctx, db)
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()
@@ -37,7 +44,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 	}
 
 	prevTurnCount := turnCount - 1
-	prevTurn, err := tr.FindForGameIDAndTurnCount(ctx, db, int(game.GetID()), prevTurnCount)
+	prevTurn, err := t.turnPort.FindForGameIDAndTurnCount(ctx, db, int(game.GetID()), prevTurnCount)
 	// gameが取得できているのにturnが取得できない場合はアプリケーションのバグなので500を返す
 	if err != nil {
 		log.Println(err)
@@ -45,7 +52,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 		return err
 	}
 
-	point, err := domain.NewPoint(int(x), int(y))
+	point, err := turn.NewPoint(int(x), int(y))
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()
@@ -61,7 +68,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 	}
 
 	// ターンを保存する
-	err = tr.Save(ctx, db, newTurn)
+	err = t.turnPort.Save(ctx, db, newTurn)
 	if err != nil {
 		log.Println(err)
 		tx.Rollback()
@@ -71,7 +78,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 	if newTurn.GameEnded() {
 		winnerDisc := newTurn.WinnerDisc()
 		gameResult := gameresult.NewGameResult(int(game.GetID()), winnerDisc)
-		err = grr.Save(ctx, db, *gameResult)
+		err = t.gameResPort.Save(ctx, db, *gameResult)
 		if err != nil {
 			log.Println(err)
 			tx.Rollback()
@@ -85,7 +92,7 @@ func (t *TurnService) RegisterTurn(ctx context.Context, db *sql.DB, turnCount in
 
 type FindLatestGameTurnByTurnCountOutput struct {
 	TurnCount  int             `json:"turnCount"`
-	Board      [][]domain.Disc `json:"board"`
+	Board      [][]turn.Disc `json:"board"`
 	NextDisc   int             `json:"nextDisc"`
 	WinnerDisc int             `json:"winnerDisc"`
 }
@@ -94,7 +101,7 @@ func (o FindLatestGameTurnByTurnCountOutput) GetTurnCount() int {
 	return o.TurnCount
 }
 
-func (o FindLatestGameTurnByTurnCountOutput) GetBoard() [][]domain.Disc {
+func (o FindLatestGameTurnByTurnCountOutput) GetBoard() [][]turn.Disc {
 	return o.Board
 }
 
@@ -106,7 +113,7 @@ func (o FindLatestGameTurnByTurnCountOutput) GetWinnerDisc() int {
 	return o.WinnerDisc
 }
 
-func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]domain.Disc, nextDisc int, winnerDisc int) FindLatestGameTurnByTurnCountOutput {
+func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]turn.Disc, nextDisc int, winnerDisc int) FindLatestGameTurnByTurnCountOutput {
 	return FindLatestGameTurnByTurnCountOutput{
 		TurnCount:  turnCount,
 		Board:      board,
@@ -116,13 +123,9 @@ func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]domain.Disc
 }
 
 func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql.DB, turnCount int) (res FindLatestGameTurnByTurnCountOutput, err error) {
-	tr := turn.NewTurnRepository()
-	gr := game.NewGameRepository()
-	grr := gameresult.NewGameResultRepository()
+	game, err := t.gamePort.FindLatest(ctx, db)
 
-	game, err := gr.FindLatest(ctx, db)
-
-	turn, err := tr.FindForGameIDAndTurnCount(ctx, db, int(game.GetID()), turnCount)
+	turn, err := t.turnPort.FindForGameIDAndTurnCount(ctx, db, int(game.GetID()), turnCount)
 	if err != nil {
 		log.Println(err)
 		return FindLatestGameTurnByTurnCountOutput{}, err
@@ -130,7 +133,7 @@ func (t *TurnService) FindLatestGameTurnByTurnCount(ctx context.Context, db *sql
 
 	var gameResult gameresult.GameResult
 	if turn.GameEnded() {
-		gameResult, err = grr.FindForGameID(ctx, db, int(game.GetID()))
+		gameResult, err = t.gameResPort.FindForGameID(ctx, db, int(game.GetID()))
 		if err != nil {
 			log.Println(err)
 			return FindLatestGameTurnByTurnCountOutput{}, err
