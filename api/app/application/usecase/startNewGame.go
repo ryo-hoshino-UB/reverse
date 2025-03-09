@@ -1,4 +1,4 @@
-package application
+package usecase
 
 import (
 	gameModel "api/domain/model/game"
@@ -9,19 +9,19 @@ import (
 	"time"
 )
 
-type GameService struct{
+type StartNewGame struct{
 	gameRepository gameModel.GameRepository
 	turnRepository turnModel.TurnRepository
 }
 
-func NewGameService(gameRepository gameModel.GameRepository, turnRepository turnModel.TurnRepository) *GameService {
-	return &GameService{
+func NewStartNewGame(gameRepository gameModel.GameRepository, turnRepository turnModel.TurnRepository) *StartNewGame {
+	return &StartNewGame{
 		gameRepository: gameRepository,
 		turnRepository: turnRepository,
 	}
 }
 
-func (g *GameService) StartNewGame(ctx context.Context, db *sql.DB) error {
+func (g *StartNewGame) Run(ctx context.Context, db *sql.DB) error {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		log.Println(err)

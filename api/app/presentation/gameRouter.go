@@ -1,7 +1,7 @@
 package presentation
 
 import (
-	application "api/application/service"
+	"api/application/usecase"
 	"api/infrastructure/repository/game"
 	"api/infrastructure/repository/turn"
 	"context"
@@ -14,7 +14,7 @@ import (
 func GameRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 	gr := game.NewGameMySQLRepositoryImpl()
 	tr := turn.NewTurnMySQLRepositoryImpl()
-	gs := application.NewGameService(gr, tr)
+	startNewGame := usecase.NewStartNewGame(gr, tr)
 	
 	return func(e *echo.Echo) {
 		// ゲームに関連するAPI群
@@ -22,7 +22,7 @@ func GameRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 
 		// ゲーム作成API
 		games.POST("", func(c echo.Context) error {
-			if err := gs.StartNewGame(ctx, db); err != nil {
+			if err := startNewGame.Run(ctx, db); err != nil {
 				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to create game"})
 			}
 			return c.JSON(http.StatusCreated, map[string]string{"message": "game created"})

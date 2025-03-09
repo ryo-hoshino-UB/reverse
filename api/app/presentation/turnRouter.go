@@ -1,7 +1,7 @@
 package presentation
 
 import (
-	application "api/application/service"
+	"api/application/usecase"
 	"api/domain/model/turn"
 	othello "api/generated"
 	"api/infrastructure/repository/game"
@@ -34,7 +34,8 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 	gr := game.NewGameMySQLRepositoryImpl()
 	tr := turnRepo.NewTurnMySQLRepositoryImpl()
 	grr := gameresult.NewGameResultMySQLRepositoryImpl()
-	ts := application.NewTurnService(tr, gr, grr) 
+	registerTurn := usecase.NewRegisterTurn(tr, gr, grr)
+	findLatestGameTurnByTurnCount := usecase.NewFindLatestGameTurnByTurnCount(tr, gr, grr)
 
 	return func(e *echo.Echo) {
 		turns := e.Group("/api/games/latest/turns")
@@ -50,7 +51,7 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid disc"})
 			}
 
-			err = ts.RegisterTurn(ctx, db, turnReq.TurnCount, disc, turnReq.Move.X, turnReq.Move.Y)
+			err = registerTurn.Run(ctx, db, turnReq.TurnCount, disc, turnReq.Move.X, turnReq.Move.Y)
 			if err != nil {
 				log.Println(err)
 				if errors.Is(err, xerrors.ErrBadRequest) {
@@ -69,7 +70,7 @@ func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid turn count"})
 			}
 
-			turnOutput, err := ts.FindLatestGameTurnByTurnCount(ctx, db, turnCount)
+			turnOutput, err := findLatestGameTurnByTurnCount.Run(ctx, db, turnCount)
 			if errors.Is(err, xerrors.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, map[string]string{"error": "turn not found"})
 			}
