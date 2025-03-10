@@ -24,10 +24,10 @@ type TurnPostRequest struct {
 }
 
 type TurnGetResponse struct {
-	TurnCount  int             `json:"turnCount"`
+	TurnCount  int           `json:"turnCount"`
 	Board      [][]turn.Disc `json:"board"`
-	NextDisc   int             `json:"nextDisc"`
-	WinnerDisc int             `json:"winnerDisc"`
+	NextDisc   int           `json:"nextDisc"`
+	WinnerDisc int           `json:"winnerDisc"`
 }
 
 func TurnRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {

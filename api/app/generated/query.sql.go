@@ -8,6 +8,7 @@ package othello
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const createGame = `-- name: CreateGame :execresult
@@ -98,6 +99,62 @@ func (q *Queries) GetGameByID(ctx context.Context, id int32) (Game, error) {
 	var i Game
 	err := row.Scan(&i.ID, &i.StartedAt)
 	return i, err
+}
+
+const getGameHistories = `-- name: GetGameHistories :many
+SELECT
+    CAST(MAX(g.id) AS SIGNED) as game_id,
+    CAST(SUM(CASE WHEN m.disc = 1 THEN 1 ELSE 0 END) AS SIGNED) as black_move_count,
+    CAST(SUM(CASE WHEN m.disc = 2 THEN 1 ELSE 0 END) AS SIGNED) as white_move_count,
+    CAST(MAX(g.started_at) AS DATETIME) as started_at,
+    CAST(MAX(gr.winner_disc) AS SIGNED) as winner_disc,
+    CAST(MAX(gr.end_at) AS DATETIME) as end_at
+FROM games g
+LEFT JOIN game_results gr ON g.id = gr.game_id
+LEFT JOIN turns t ON g.id = t.game_id
+LEFT JOIN moves m ON t.id = m.turn_id
+group by g.id
+order by g.id desc
+limit ?
+`
+
+type GetGameHistoriesRow struct {
+	GameID         int32
+	BlackMoveCount int32
+	WhiteMoveCount int32
+	StartedAt      time.Time
+	WinnerDisc     sql.NullInt32
+	EndAt          sql.NullTime
+}
+
+func (q *Queries) GetGameHistories(ctx context.Context, limit int32) ([]GetGameHistoriesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getGameHistories, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetGameHistoriesRow
+	for rows.Next() {
+		var i GetGameHistoriesRow
+		if err := rows.Scan(
+			&i.GameID,
+			&i.BlackMoveCount,
+			&i.WhiteMoveCount,
+			&i.StartedAt,
+			&i.WinnerDisc,
+			&i.EndAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getGameResultByGameID = `-- name: GetGameResultByGameID :one

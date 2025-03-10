@@ -25,7 +25,7 @@ func (g *GameGateway) FindLatest(ctx context.Context) (game.Game, error) {
 	}
 
 	return game.Game{
-		ID: int(latestGame.ID),
+		ID:        int(latestGame.ID),
 		StartedAt: latestGame.StartedAt,
 	}, nil
 }

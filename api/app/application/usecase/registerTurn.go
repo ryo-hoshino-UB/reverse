@@ -9,9 +9,9 @@ import (
 	"log"
 )
 
-type RegisterTurn struct{
-	turnPort turn.TurnRepository
-	gamePort game.GameRepository
+type RegisterTurn struct {
+	turnPort    turn.TurnRepository
+	gamePort    game.GameRepository
 	gameResPort gameresult.GameResultRepository
 }
 
@@ -21,8 +21,8 @@ func NewRegisterTurn(
 	gameResPort gameresult.GameResultRepository,
 ) *RegisterTurn {
 	return &RegisterTurn{
-		turnPort: turnPort,
-		gamePort: gamePort,
+		turnPort:    turnPort,
+		gamePort:    gamePort,
 		gameResPort: gameResPort,
 	}
 }

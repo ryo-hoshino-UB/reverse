@@ -5,35 +5,23 @@ import { PageTitle } from "./PageTitle";
 import { StartButton } from "./StartButton";
 import { fetchApi } from "./fetch";
 
-type GameHistoryResponse = {
-  games: GameHistory[];
-};
+type GameHistoriesResponse = GameHistory[];
 
 export const TopPage = () => {
-  const [gameHistories, setGameHistories] = useState<GameHistory[]>([
-    {
-      blackMoveCount: 0,
-      whiteMoveCount: 0,
-      winnerDisc: 1,
-      startedAt: "2021-01-01T00:00:00Z",
-      endedAt: "2021-01-01T00:00:00Z",
-    },
-    {
-      blackMoveCount: 0,
-      whiteMoveCount: 0,
-      winnerDisc: 1,
-      startedAt: "2021-01-01T00:00:00Z",
-      endedAt: "2021-01-01T00:00:00Z",
-    },
-  ]);
+  const [gameHistories, setGameHistories] = useState<GameHistory[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     const getGameHistory = async () => {
-      const res = await fetchApi("/api/games");
-      const data: GameHistoryResponse = await res.json();
-      setGameHistories(data.games);
+      try {
+        const res = await fetchApi("/api/games");
+        const gameHistories: GameHistoriesResponse = await res.json();
+        setGameHistories(gameHistories);
+      } catch {
+        setGameHistories([]);
+      }
     };
+
     getGameHistory();
   }, []);
 

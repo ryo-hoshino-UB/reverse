@@ -9,7 +9,6 @@ import (
 	"log"
 )
 
-
 type TurnMySQLRepositoryImpl struct {
 	turnRepository turn.TurnRepository
 }

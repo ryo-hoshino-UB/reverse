@@ -5,7 +5,7 @@ import (
 	"database/sql"
 )
 
-type GameRepository interface{
+type GameRepository interface {
 	FindLatest(ctx context.Context, db *sql.DB) (Game, error)
 	Save(ctx context.Context, db *sql.DB) (Game, error)
 }

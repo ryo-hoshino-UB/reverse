@@ -9,9 +9,9 @@ import (
 	"log"
 )
 
-type FindLatestGameTurnByTurnCount struct{
-	turnPort turn.TurnRepository
-	gamePort game.GameRepository
+type FindLatestGameTurnByTurnCount struct {
+	turnPort    turn.TurnRepository
+	gamePort    game.GameRepository
 	gameResPort gameresult.GameResultRepository
 }
 
@@ -21,17 +21,17 @@ func NewFindLatestGameTurnByTurnCount(
 	gameResPort gameresult.GameResultRepository,
 ) *FindLatestGameTurnByTurnCount {
 	return &FindLatestGameTurnByTurnCount{
-		turnPort: turnPort,
-		gamePort: gamePort,
+		turnPort:    turnPort,
+		gamePort:    gamePort,
 		gameResPort: gameResPort,
 	}
 }
 
 type FindLatestGameTurnByTurnCountOutput struct {
-	TurnCount  int             `json:"turnCount"`
+	TurnCount  int           `json:"turnCount"`
 	Board      [][]turn.Disc `json:"board"`
-	NextDisc   int             `json:"nextDisc"`
-	WinnerDisc int             `json:"winnerDisc"`
+	NextDisc   int           `json:"nextDisc"`
+	WinnerDisc int           `json:"winnerDisc"`
 }
 
 func NewFindLatestGameTurnByTurnCountOutput(turnCount int, board [][]turn.Disc, nextDisc int, winnerDisc int) FindLatestGameTurnByTurnCountOutput {

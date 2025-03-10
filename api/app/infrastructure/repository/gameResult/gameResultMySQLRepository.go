@@ -7,7 +7,7 @@ import (
 	"database/sql"
 )
 
-type GameResultMySQLRepositoryImpl struct {}
+type GameResultMySQLRepositoryImpl struct{}
 
 func NewGameResultMySQLRepositoryImpl() *GameResultMySQLRepositoryImpl {
 	return &GameResultMySQLRepositoryImpl{}

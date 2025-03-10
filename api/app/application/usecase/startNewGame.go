@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type StartNewGame struct{
+type StartNewGame struct {
 	gameRepository gameModel.GameRepository
 	turnRepository turnModel.TurnRepository
 }

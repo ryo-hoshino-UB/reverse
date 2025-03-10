@@ -66,3 +66,19 @@ SELECT id, game_id, winner_disc, end_at FROM game_results WHERE id = ?;
 
 -- name: GetGameResultByGameID :one
 SELECT id, game_id, winner_disc, end_at FROM game_results WHERE game_id = ?;
+
+-- name: GetGameHistories :many
+SELECT
+    CAST(MAX(g.id) AS SIGNED) as game_id,
+    CAST(SUM(CASE WHEN m.disc = 1 THEN 1 ELSE 0 END) AS SIGNED) as black_move_count,
+    CAST(SUM(CASE WHEN m.disc = 2 THEN 1 ELSE 0 END) AS SIGNED) as white_move_count,
+    CAST(MAX(g.started_at) AS DATETIME) as started_at,
+    CAST(MAX(gr.winner_disc) AS SIGNED) as winner_disc,
+    CAST(MAX(gr.end_at) AS DATETIME) as end_at
+FROM games g
+LEFT JOIN game_results gr ON g.id = gr.game_id
+LEFT JOIN turns t ON g.id = t.game_id
+LEFT JOIN moves m ON t.id = m.turn_id
+group by g.id
+order by g.id desc
+limit ?;

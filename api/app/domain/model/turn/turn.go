@@ -6,7 +6,7 @@ import (
 )
 
 type Turn struct {
-	ID 	  int
+	ID        int
 	GameID    int
 	TurnCount int
 	NextDisc  Disc

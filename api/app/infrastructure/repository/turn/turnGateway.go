@@ -27,7 +27,7 @@ func (t *TurnGateway) FindForGameIDAndTurnCount(ctx context.Context, gameID int,
 	}
 
 	return turn.Turn{
-		ID : int(turnRecord.ID),
+		ID:        int(turnRecord.ID),
 		GameID:    int(turnRecord.GameID),
 		TurnCount: int(turnRecord.TurnCount),
 		NextDisc:  turn.Disc(turnRecord.NextDisc.Int32),
@@ -50,9 +50,9 @@ func (t *TurnGateway) Save(ctx context.Context, inputTurn turn.Turn) (turn.Turn,
 	}
 
 	return turn.Turn{
-			ID: int(turnID),
-			GameID:    int(inputTurn.GetGameID()),
-			TurnCount: int(inputTurn.GetTurnCount()),
-			NextDisc:  inputTurn.GetNextDisc(),
+		ID:        int(turnID),
+		GameID:    int(inputTurn.GetGameID()),
+		TurnCount: int(inputTurn.GetTurnCount()),
+		NextDisc:  inputTurn.GetNextDisc(),
 	}, nil
 }

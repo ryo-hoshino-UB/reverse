@@ -1,6 +1,7 @@
 import type { WinnerDisc } from "./winnerDisc";
 
 export type GameHistory = {
+  id: number;
   blackMoveCount: number;
   whiteMoveCount: number;
   winnerDisc: WinnerDisc;
