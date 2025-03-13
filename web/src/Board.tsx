@@ -1,6 +1,8 @@
 "use client";
 
+import { Home } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { Stone } from "./Stone";
 import type { Disc } from "./disc";
 import { fetchApi } from "./fetch";
@@ -47,6 +49,8 @@ export const Board: React.FC = () => {
   const [bannerMessage, setBannerMessage] = useState(
     changeBannerMessage({ nextDisc: 1 })
   );
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const startGame = async () => {
@@ -126,8 +130,15 @@ export const Board: React.FC = () => {
 
   return (
     <div className="flex flex-col items-center gap-12">
-      <div className="inline-block bg-gradient-to-br from-emerald-800 to-emerald-900 p-1.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] border border-emerald-700/30">
-        {[...Array(8)].map((_, y) => renderRow(y))}
+      <div className="flex flex-col items-end gap-4">
+        <Home
+          size={36}
+          className="text-emerald-700 hover:text-emerald-500 cursor-pointer"
+          onClick={() => navigate("/")}
+        />
+        <div className="inline-block bg-gradient-to-br from-emerald-800 to-emerald-900 p-1.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] border border-emerald-700/30">
+          {[...Array(8)].map((_, y) => renderRow(y))}
+        </div>
       </div>
 
       <div className="bg-gray-800/90 px-6 py-3 rounded-full shadow-lg border border-emerald-500/30 backdrop-blur-sm">
