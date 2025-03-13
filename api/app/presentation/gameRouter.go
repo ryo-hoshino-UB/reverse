@@ -42,7 +42,7 @@ func GameRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 				return c.JSON(http.StatusInternalServerError, map[string]string{"error": "failed to get game histories"})
 			}
 
-			gameHistoriesResponse := make([]GameHistoriesResponse, limit)
+			gameHistoriesResponse := make([]GameHistoriesResponse, len(gameHistories))
 			for i, history := range gameHistories {
 				gameHistoriesResponse[i] = GameHistoriesResponse{
 					GameID:         history.GetGameID(),

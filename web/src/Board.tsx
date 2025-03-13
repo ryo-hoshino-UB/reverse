@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { NextDiscBanner } from "./NextDiscBanner";
 import { Stone } from "./Stone";
 import type { Disc } from "./disc";
 import { fetchApi } from "./fetch";
@@ -105,8 +104,13 @@ export const Board: React.FC = () => {
       <div
         onClick={handleSquareClick}
         key={`${y}-${x}`}
-        className="w-12 h-12 bg-green-600 border border-black flex items-center justify-center"
+        className="w-14 h-14 bg-gradient-to-br from-emerald-700 to-emerald-800 border border-emerald-900/70 flex items-center justify-center relative overflow-hidden transition-all duration-300 hover:shadow-inner hover:from-emerald-600 hover:to-emerald-700"
       >
+        {/* セルの光沢効果 */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-emerald-400/30" />
+        <div className="absolute top-0 left-0 bottom-0 w-[1px] bg-emerald-400/30" />
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-emerald-900/50" />
+        <div className="absolute top-0 left-0 bottom-0 w-[1px] bg-emerald-400/30" />
         <Stone disc={disc} />
       </div>
     );
@@ -121,11 +125,34 @@ export const Board: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-[392px]">
-      <div className="inline-block bg-green-700 p-1">
+    <div className="flex flex-col items-center gap-12">
+      <div className="inline-block bg-gradient-to-br from-emerald-800 to-emerald-900 p-1.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] border border-emerald-700/30">
         {[...Array(8)].map((_, y) => renderRow(y))}
       </div>
-      <NextDiscBanner message={bannerMessage} />
+
+      <div className="bg-gray-800/90 px-6 py-3 rounded-full shadow-lg border border-emerald-500/30 backdrop-blur-sm">
+        <div className="relative overflow-hidden">
+          <span className="text-white font-bold text-lg tracking-wide relative z-10 flex items-center justify-center">
+            {bannerMessage}
+          </span>
+        </div>
+      </div>
+
+      {/* ゲーム情報 */}
+      <div className="flex justify-between w-full bg-gray-800/80 rounded-lg p-4 border border-gray-700/50 shadow-md text-base">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 rounded-full bg-black shadow-[0_0_5px_rgba(0,0,0,0.5)]" />
+          <span className="text-white font-medium">
+            黒: {board.flat().filter((d) => d === 1).length}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-white font-medium">
+            白: {board.flat().filter((d) => d === 2).length}
+          </span>
+          <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,0.5)]" />
+        </div>
+      </div>
     </div>
   );
 };

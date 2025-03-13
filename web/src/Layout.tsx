@@ -2,8 +2,10 @@ import { Outlet } from "react-router";
 
 export const Layout: React.FC = () => {
   return (
-    <div className="text-gray-800 flex flex-col gap-10 items-center justify-start w-dvw h-screen">
-      <Outlet />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white w-full">
+      <div className="min-w-screen mx-auto px-12 py-12">
+        <Outlet />
+      </div>
     </div>
   );
 };

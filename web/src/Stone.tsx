@@ -5,22 +5,23 @@ type Props = {
 };
 
 export const Stone: React.FC<Props> = ({ disc }) => {
-  let stoneClass = "w-10 h-10 rounded-full ";
-
+  let discStyle = "";
   switch (disc) {
     case 1:
-      stoneClass += "bg-black";
+      discStyle =
+        "bg-gradient-to-br from-gray-900 to-gray-700 shadow-[inset_0_-2px_4px_rgba(255,255,255,0.1)]";
       break;
     case 2:
-      stoneClass += "bg-white";
+      discStyle =
+        "bg-gradient-to-br from-gray-100 to-gray-300 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.1)]";
       break;
     default:
-      stoneClass += "bg-transparent";
+      break;
   }
-
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className={stoneClass} />
-    </div>
+    <div
+      className={`w-12 h-12 rounded-full flex items-center justify-center
+        ${discStyle} transition-all duration-300 transform`}
+    />
   );
 };

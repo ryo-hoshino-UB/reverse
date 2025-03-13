@@ -21,16 +21,16 @@ func (s *FindLastGamesMySQLQueryService) Query(ctx context.Context, db *sql.DB, 
 		return nil, err
 	}
 
-	gameHistories := make([]queryModel.FindLastGamesQueryModel, len(gameHistoryRecords))
-	for i, record := range gameHistoryRecords {
-		gameHistories[i] = queryModel.NewFindLastGamesQueryModel(
+	gameHistories := make([]queryModel.FindLastGamesQueryModel, 0)
+	for _, record := range gameHistoryRecords {
+		gameHistories = append(gameHistories, queryModel.NewFindLastGamesQueryModel(
 			int(record.GameID),
 			int(record.BlackMoveCount),
 			int(record.WhiteMoveCount),
 			int(record.WinnerDisc.Int32),
 			record.StartedAt,
 			record.EndAt.Time,
-		)
+		))
 	}
 
 	return gameHistories, nil
