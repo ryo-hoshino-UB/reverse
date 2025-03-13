@@ -38,6 +38,10 @@ func (m *FindLastGamesQueryModel) GetWhiteMoveCount() int {
 	return m.WhiteMoveCount
 }
 
+func (m *FindLastGamesQueryModel) GetWinnerDisc() int {
+	return m.WinnerDisc
+}
+
 func (m *FindLastGamesQueryModel) GetStartedAt() time.Time {
 	return m.StartedAt
 }

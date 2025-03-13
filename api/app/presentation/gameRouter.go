@@ -48,6 +48,7 @@ func GameRouter(ctx context.Context, db *sql.DB) func(e *echo.Echo) {
 					GameID:         history.GetGameID(),
 					BlackMoveCount: history.GetBlackMoveCount(),
 					WhiteMoveCount: history.GetWhiteMoveCount(),
+					WinnerDisc:     history.GetWinnerDisc(),
 					StartedAt:      history.GetStartedAt(),
 					EndAt:          history.GetEndAt(),
 				}

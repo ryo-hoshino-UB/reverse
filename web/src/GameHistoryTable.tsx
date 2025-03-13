@@ -44,7 +44,7 @@ export const GameHistoryTable: React.FC<Props> = ({ gameHistories }) => {
     blackMoveCount: number,
     whiteMoveCount: number
   ) => {
-    if (blackMoveCount === 0 && whiteMoveCount === 0) {
+    if (blackMoveCount === 0 || whiteMoveCount === 0) {
       return (
         <div className="flex items-center gap-2 text-gray-500">
           <span className="font-medium">-</span>
@@ -55,7 +55,7 @@ export const GameHistoryTable: React.FC<Props> = ({ gameHistories }) => {
       case 1:
         return (
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-gray-900 shadow-[0_0_4px_rgba(0,0,0,0.4)]" />
+            <div className="w-5 h-5 rounded-full bg-gray-800 border-1 border-gray-400" />
             <span className="font-medium">黒</span>
           </div>
         );
@@ -119,8 +119,8 @@ export const GameHistoryTable: React.FC<Props> = ({ gameHistories }) => {
                 <td className="py-3 px-4 text-white/90">
                   {renderWinner(
                     game.winnerDisc,
-                    gameHistories[0].blackMoveCount,
-                    gameHistories[0].whiteMoveCount
+                    gameHistories[index].blackMoveCount,
+                    gameHistories[index].whiteMoveCount
                   )}
                 </td>
                 <td className="py-3 px-4 text-white/70 text-sm">

@@ -16,8 +16,9 @@ export const TopPage = () => {
     const getGameHistory = async () => {
       try {
         const res = await fetchApi("/api/games");
-        const gameHistories: GameHistoriesResponse = await res.json();
-        setGameHistories(gameHistories);
+        const fetchGameHistories: GameHistoriesResponse = await res.json();
+        console.log(fetchGameHistories);
+        setGameHistories(fetchGameHistories);
       } catch {
         setGameHistories([]);
       }
