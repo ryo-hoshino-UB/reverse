@@ -4,7 +4,20 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: "./",
+  root: "src",
   plugins: [react(), tailwindcss()],
+  build: {
+    outDir: "dist", // ビルド出力ディレクトリを指定
+    // 存在しないときはフォルダを作成する
+    emptyOutDir: true,
+    copyPublicDir: true,
+    rollupOptions: {
+      input: {
+        main: "src/index.html",
+      },
+    },
+  },
   server: {
     port: 5001,
   },
