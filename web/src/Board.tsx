@@ -46,12 +46,71 @@ export const Board: React.FC = () => {
       .fill(null)
       .map(() => Array(8).fill(null))
   );
+  const [prevBoard, setPrevBoard] = useState<Disc[][]>(
+    Array(8)
+      .fill(null)
+      .map(() => Array(8).fill(null))
+  );
+  const [flippingCells, setFlippingCells] = useState<boolean[][]>(
+    Array(8)
+      .fill(null)
+      .map(() => Array(8).fill(false))
+  );
+  const [newPlacedCell, setNewPlacedCell] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [bannerMessage, setBannerMessage] = useState(
     changeBannerMessage({ nextDisc: 1 })
   );
   const [gameOver, setGameOver] = useState(false);
   const [winnerDisc, setWinnerDisc] = useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [animationsInProgress, setAnimationsInProgress] = useState(false);
+  const [showWinnerOverlay, setShowWinnerOverlay] = useState(false);
+
+  // アニメーション用のスタイルを追加
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = `
+      @keyframes flip {
+        0% {
+          transform: perspective(400px) rotateY(0deg);
+        }
+        50% {
+          transform: perspective(400px) rotateY(90deg);
+        }
+        100% {
+          transform: perspective(400px) rotateY(0deg);
+        }
+      }
+      
+      @keyframes place {
+        0% {
+          transform: scale(0);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      
+      .animate-flip {
+        animation: flip 300ms ease-in-out forwards;
+        transform-style: preserve-3d;
+      }
+      
+      .animate-place {
+        animation: place 300ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const navigate = useNavigate();
 
@@ -72,6 +131,51 @@ export const Board: React.FC = () => {
     navigate("/");
   };
 
+  // 前回のボードと現在のボードを比較して、ひっくり返った石を特定
+  useEffect(() => {
+    if (prevBoard.length === 0 || board.length === 0) return;
+
+    // 既に値が入っていて値が変わったセルをフリップ対象とする
+    const newFlippingCells = Array(8)
+      .fill(null)
+      .map(() => Array(8).fill(false));
+    let hasFlippingCells = false;
+
+    for (let y = 0; y < 8; y++) {
+      for (let x = 0; x < 8; x++) {
+        if (
+          prevBoard[y][x] !== 0 &&
+          board[y][x] !== 0 &&
+          prevBoard[y][x] !== board[y][x]
+        ) {
+          newFlippingCells[y][x] = true;
+          hasFlippingCells = true;
+        }
+      }
+    }
+
+    if (hasFlippingCells) {
+      setAnimationsInProgress(true);
+      setFlippingCells(newFlippingCells);
+
+      // アニメーション終了後にリセット
+      const timer = setTimeout(() => {
+        setFlippingCells(
+          Array(8)
+            .fill(null)
+            .map(() => Array(8).fill(false))
+        );
+      }, 300);
+      setAnimationsInProgress(false);
+
+      if (gameOver) {
+        setShowWinnerOverlay(true);
+      }
+
+      return () => clearTimeout(timer);
+    }
+  }, [board, prevBoard, gameOver]);
+
   useEffect(() => {
     const startGame = async () => {
       await registerGame();
@@ -80,6 +184,7 @@ export const Board: React.FC = () => {
     const fetchTurn = async () => {
       const turn = await getTurn(0);
       setBoard(turn.board);
+      setPrevBoard(turn.board);
       setNextDisc(turn.nextDisc);
     };
 
@@ -129,40 +234,68 @@ export const Board: React.FC = () => {
 
   const renderSquare = (y: number, x: number) => {
     const disc = board[y][x];
+    const isFlipping = flippingCells[y][x];
+    const isNewPlaced = newPlacedCell?.x === x && newPlacedCell?.y === y;
 
     const handleSquareClick = async () => {
       // ゲーム終了時はクリックを無効化
-      if (gameOver) return;
+      if (gameOver || animationsInProgress) return;
 
       const nextTurnCount = turnCount + 1;
 
-      await registerTurn({
-        turnCount: nextTurnCount,
-        move: {
-          disc: nextDisc,
-          x,
-          y,
-        },
-      });
-      // registerTurnの後に直接最新状態を取得
-      const turn = await getTurn(nextTurnCount);
-      console.log(turn);
-      if (turn.nextDisc !== 0) {
-        setBannerMessage(changeBannerMessage({ nextDisc: turn.nextDisc }));
-        if (nextDisc === turn.nextDisc) {
-          setBannerMessage(
-            `もう一度${nextDisc === 1 ? "白" : "黒"}のターンです`
-          );
+      try {
+        // クリックされたセルを記録（新しく置かれる石の場所）
+        setNewPlacedCell({ x, y });
+        setAnimationsInProgress(true);
+
+        // 現在のボードを保存（変更前の状態）
+        setPrevBoard([...board.map((row) => [...row])]);
+
+        await registerTurn({
+          turnCount: nextTurnCount,
+          move: {
+            disc: nextDisc,
+            x,
+            y,
+          },
+        });
+
+        // registerTurnの後に直接最新状態を取得
+        const turn = await getTurn(nextTurnCount);
+
+        if (turn.nextDisc !== 0) {
+          setBannerMessage(changeBannerMessage({ nextDisc: turn.nextDisc }));
+          if (nextDisc === turn.nextDisc) {
+            setBannerMessage(
+              `もう一度${nextDisc === 1 ? "白" : "黒"}のターンです`
+            );
+          }
+        } else {
+          // ゲーム終了時の処理
+          setGameOver(true);
+          setWinnerDisc(turn.winnerDisc);
+          setBannerMessage("ゲーム終了");
         }
-      } else {
-        // ゲーム終了時の処理
-        setGameOver(true);
-        setWinnerDisc(turn.winnerDisc);
-        setBannerMessage("ゲーム終了");
+
+        // ボード状態を更新
+        setBoard(turn.board);
+        setNextDisc(turn.nextDisc);
+        setTurnCount(nextTurnCount);
+
+        // 一定時間後に新しく置いた石のマーキングをリセット
+        setTimeout(() => {
+          setNewPlacedCell(null);
+          setAnimationsInProgress(false);
+
+          // ゲーム終了時、アニメーション終了後にオーバーレイを表示
+          if (turn.nextDisc === 0) {
+            setShowWinnerOverlay(true);
+          }
+        }, 300);
+      } catch (error) {
+        console.error("Error placing disc:", error);
+        setNewPlacedCell(null);
       }
-      setBoard(turn.board);
-      setNextDisc(turn.nextDisc);
-      setTurnCount(nextTurnCount);
     };
 
     return (
@@ -177,7 +310,7 @@ export const Board: React.FC = () => {
         <div className="absolute top-0 left-0 bottom-0 w-[1px] bg-emerald-400/30" />
         <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-emerald-900/50" />
         <div className="absolute top-0 left-0 bottom-0 w-[1px] bg-emerald-400/30" />
-        <Stone disc={disc} />
+        <Stone disc={disc} isFlipping={isFlipping || isNewPlaced} />
       </div>
     );
   };
@@ -192,7 +325,7 @@ export const Board: React.FC = () => {
 
   // 勝者表示用のオーバーレイ
   const renderWinnerOverlay = () => {
-    if (!gameOver) return null;
+    if (!showWinnerOverlay) return null;
 
     let winnerContent: React.ReactNode;
     const blackCount = board.flat().filter((d) => d === 1).length;
@@ -220,7 +353,7 @@ export const Board: React.FC = () => {
       );
     } else {
       winnerContent = (
-        <div className="text-center">
+        <div className="text-</div>center">
           <h2 className="text-3xl font-bold text-white mb-4">
             {winnerDisc === 1 ? "黒の勝ち！" : "白の勝ち！"}
           </h2>
@@ -233,7 +366,7 @@ export const Board: React.FC = () => {
             </div>
             <div className="flex flex-col items-center">
               <div className="w-12 h-12 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-2" />
-              <span className="text-xl font-semibold text-white">
+              <span className="text-xl font-sem</div>ibold text-white">
                 {whiteCount}
               </span>
             </div>
@@ -252,7 +385,7 @@ export const Board: React.FC = () => {
     }
 
     return (
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg animate-fadeIn">
+      <div className="absolute inset-0 bg-bl</div>ack/70 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg animate-fadeIn">
         <div className="bg-gray-800/90 p-8 rounded-xl border border-emerald-400/30 shadow-[0_0_25px_rgba(16,185,129,0.3)]">
           {winnerContent}
         </div>
