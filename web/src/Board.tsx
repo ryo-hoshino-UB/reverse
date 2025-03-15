@@ -1,6 +1,6 @@
 "use client";
 
-import { Home } from "lucide-react";
+import { AlertCircle, Home } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Stone } from "./Stone";
@@ -51,8 +51,26 @@ export const Board: React.FC = () => {
   );
   const [gameOver, setGameOver] = useState(false);
   const [winnerDisc, setWinnerDisc] = useState<number | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const navigate = useNavigate();
+
+  const handleHomeClick = () => {
+    if (gameOver) {
+      navigate("/");
+      return;
+    }
+    setShowConfirmModal(true);
+  };
+
+  const handleCancelClick = () => {
+    setShowConfirmModal(false);
+  };
+
+  const handleConfirmClick = () => {
+    setShowConfirmModal(false);
+    navigate("/");
+  };
 
   useEffect(() => {
     const startGame = async () => {
@@ -68,6 +86,46 @@ export const Board: React.FC = () => {
     startGame();
     fetchTurn();
   }, []);
+
+  const renderConfirmModal = () => {
+    if (!showConfirmModal) return null;
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/40 backdrop-blur-sm">
+        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-xl p-6 max-w-md w-full mx-4 animate-fadeIn">
+          <div className="flex items-start gap-4">
+            <div className="text-amber-400 flex-shrink-0 mt-1">
+              <AlertCircle size={24} />
+            </div>
+            <div className="flex-grow">
+              <h3 className="text-lg font-semibold text-white mb-2">
+                対戦を終了しますか？
+              </h3>
+              <p className="text-gray-300 mb-6">
+                ホームに戻ると現在の対戦が終了します。よろしいですか？
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancelClick}
+                  className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors duration-200"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmClick}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors duration-200"
+                >
+                  ホームに戻る
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderSquare = (y: number, x: number) => {
     const disc = board[y][x];
@@ -208,7 +266,7 @@ export const Board: React.FC = () => {
         <Home
           size={36}
           className="text-emerald-700 hover:text-emerald-500 cursor-pointer"
-          onClick={() => navigate("/")}
+          onClick={handleHomeClick}
         />
         <div className="inline-block bg-gradient-to-br from-emerald-800 to-emerald-900 p-1.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] border border-emerald-700/30 relative">
           {[...Array(8)].map((_, y) => renderRow(y))}
@@ -239,6 +297,7 @@ export const Board: React.FC = () => {
           <div className="w-5 h-5 rounded-full bg-white shadow-[0_0_5px_rgba(255,255,255,0.5)]" />
         </div>
       </div>
+      {renderConfirmModal()}
     </div>
   );
 };
