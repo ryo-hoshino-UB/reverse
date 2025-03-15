@@ -49,6 +49,8 @@ export const Board: React.FC = () => {
   const [bannerMessage, setBannerMessage] = useState(
     changeBannerMessage({ nextDisc: 1 })
   );
+  const [gameOver, setGameOver] = useState(false);
+  const [winnerDisc, setWinnerDisc] = useState<number | null>(null);
 
   const navigate = useNavigate();
 
@@ -71,6 +73,9 @@ export const Board: React.FC = () => {
     const disc = board[y][x];
 
     const handleSquareClick = async () => {
+      // ゲーム終了時はクリックを無効化
+      if (gameOver) return;
+
       const nextTurnCount = turnCount + 1;
 
       await registerTurn({
@@ -92,11 +97,10 @@ export const Board: React.FC = () => {
           );
         }
       } else {
-        if (turn.winnerDisc === WINNER_DISC.Draw) {
-          setBannerMessage("引き分けです");
-        } else {
-          setBannerMessage(`${turn.winnerDisc === 1 ? "黒" : "白"}の勝ちです`);
-        }
+        // ゲーム終了時の処理
+        setGameOver(true);
+        setWinnerDisc(turn.winnerDisc);
+        setBannerMessage("ゲーム終了");
       }
       setBoard(turn.board);
       setNextDisc(turn.nextDisc);
@@ -128,6 +132,76 @@ export const Board: React.FC = () => {
     );
   };
 
+  // 勝者表示用のオーバーレイ
+  const renderWinnerOverlay = () => {
+    if (!gameOver) return null;
+
+    let winnerContent: React.ReactNode;
+    const blackCount = board.flat().filter((d) => d === 1).length;
+    const whiteCount = board.flat().filter((d) => d === 2).length;
+
+    if (winnerDisc === WINNER_DISC.Draw) {
+      winnerContent = (
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">引き分け</h2>
+          <div className="flex justify-center items-center gap-8">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full bg-gray-800 shadow-[0_0_10px_rgba(0,0,0,0.5)] mb-2" />
+              <span className="text-xl font-semibold text-white">
+                {blackCount}
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-2" />
+              <span className="text-xl font-semibold text-white">
+                {whiteCount}
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    } else {
+      winnerContent = (
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">
+            {winnerDisc === 1 ? "黒の勝ち！" : "白の勝ち！"}
+          </h2>
+          <div className="flex justify-center items-center gap-8">
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full bg-gray-800 shadow-[0_0_10px_rgba(0,0,0,0.5)] mb-2" />
+              <span className="text-xl font-semibold text-white">
+                {blackCount}
+              </span>
+            </div>
+            <div className="flex flex-col items-center">
+              <div className="w-12 h-12 rounded-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)] mb-2" />
+              <span className="text-xl font-semibold text-white">
+                {whiteCount}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="mt-8 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-full transition-colors duration-200 shadow-lg flex items-center justify-center gap-2"
+          >
+            <Home size={18} />
+            ホームに戻る
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-10 rounded-lg animate-fadeIn">
+        <div className="bg-gray-800/90 p-8 rounded-xl border border-emerald-400/30 shadow-[0_0_25px_rgba(16,185,129,0.3)]">
+          {winnerContent}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col items-center gap-12">
       <div className="flex flex-col items-end gap-4">
@@ -136,8 +210,9 @@ export const Board: React.FC = () => {
           className="text-emerald-700 hover:text-emerald-500 cursor-pointer"
           onClick={() => navigate("/")}
         />
-        <div className="inline-block bg-gradient-to-br from-emerald-800 to-emerald-900 p-1.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] border border-emerald-700/30">
+        <div className="inline-block bg-gradient-to-br from-emerald-800 to-emerald-900 p-1.5 rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.2)] border border-emerald-700/30 relative">
           {[...Array(8)].map((_, y) => renderRow(y))}
+          {renderWinnerOverlay()}
         </div>
       </div>
 
