@@ -1,7 +1,7 @@
 version: "2"
 sql:
   - engine: "mysql"
-    queries: "../db/docker/data/query.sql"
+    queries: "./query.sql"
     schema: "../db/docker/data/002_ddl.sql"
     gen:
       go:

@@ -5,6 +5,7 @@ import (
 	othello "api/generated"
 	"context"
 	"database/sql"
+	"log"
 )
 
 type FindLastGamesMySQLQueryService struct {
@@ -17,6 +18,7 @@ func NewFindLastGamesMySQLQueryService() *FindLastGamesMySQLQueryService {
 func (s *FindLastGamesMySQLQueryService) Query(ctx context.Context, db *sql.DB, limit int) ([]queryModel.FindLastGamesQueryModel, error) {
 	queries := othello.New(db)
 	gameHistoryRecords, err := queries.GetGameHistories(ctx, int32(limit))
+	log.Printf("gameHistoryRecords, err: %v, %v", gameHistoryRecords, err)
 	if err != nil {
 		return nil, err
 	}
